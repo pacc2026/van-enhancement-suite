@@ -1,14 +1,22 @@
 # VAN Enhancement Suite
 
-A Chrome extension for VAN's **Create A List** page (`CreateAList.aspx`), in two
+A Chrome extension for VAN's list building and turf cutting pages, in three
 parts:
 
-- **Checkbox Targets** — the collapsed Targets tree dropdown becomes a flat,
-  grouped checkbox list, and the Any/All Match Type select becomes radio
-  buttons.
-- **GOTV Turf Cutting mode** — a switch that strips the form down to County,
-  the Dry Run Universe > Doors target, and the suppressions, with everything
-  preset and locked.
+- **Checkbox Targets** (`CreateAList.aspx`) — the collapsed Targets tree
+  dropdown becomes a flat, grouped checkbox list, and the Any/All Match Type
+  select becomes radio buttons.
+- **GOTV Turf Cutting mode** (`CreateAList.aspx`) — a switch that strips the
+  form down to County, the Dry Run Universe > Doors target, and the
+  suppressions, with everything preset and locked.
+- **Save My Map Region prefill** (`TurfCutter.aspx`) — fills the region name
+  and folder from the precinct chosen upstream, so each turf is named to the
+  turf plan without retyping.
+
+> **Not affiliated with NGP VAN.** This is an unofficial, internally built
+> extension that modifies VAN's pages in the browser. It is not endorsed by or
+> supported by NGP VAN, Inc., and nothing here is a public contract — see
+> [Legal](#legal).
 
 ## Install
 
@@ -174,8 +182,6 @@ the prototype setter survived, and only the latter enables the Save button.
 - None of these element IDs are a public contract. NGP VAN ships changes
   without notice, and a release can break the selectors at any time; the
   fail-open guards are what keep that from breaking the page itself.
-- Verify your NGP VAN user agreement before distributing this beyond your own
-  browser.
 
 ## Files
 
@@ -196,3 +202,26 @@ the prototype setter survived, and only the latter enables the Save button.
 | `tools/build-crx.sh` | Packs and signs the .crx, regenerates the update manifest |
 | `docs/updates.xml` | GENERATED update manifest Chrome polls for new versions |
 | `docs/DEPLOYMENT.md` | Self-hosting, enterprise policy, and release process |
+
+## Legal
+
+**No affiliation.** This project is not affiliated with, endorsed by, sponsored
+by, or supported by NGP VAN, Inc. It is an unofficial tool built in-house for
+our own staff. "VAN", "VoteBuilder" and "NGP VAN" are trademarks of their
+respective owners and are used here only to identify the product this extension
+interacts with.
+
+Everything it does happens client-side, in the browser, to pages the signed-in
+user is already authorized to see. It reads and drives VAN's own widgets
+through their own APIs — it does not call undocumented endpoints, forge
+postbacks, or bypass any access control. Check your NGP VAN user agreement
+before rolling it out, since terms differ by committee and an agreement can
+restrict automated interaction regardless of how it is implemented.
+
+**No license.** All rights reserved. This repository is public for one reason:
+Chrome can only fetch a self-hosted extension for managed installs over public
+HTTPS. It is not an offer of reuse, and no license is granted to use, copy, or
+modify the code. If you want to use it, ask.
+
+`icon-source.webp`, and the icon set generated from it, are third-party artwork
+that is not ours to license in any case.
