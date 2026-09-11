@@ -12,6 +12,12 @@ parts:
 
 ## Install
 
+Staff do not install this by hand. It is self-hosted and force-installed on
+managed browsers through enterprise policy — see
+[docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) for the rollout and release steps.
+
+To run it locally while developing:
+
 1. Open `chrome://extensions`.
 2. Turn on **Developer mode** (top right).
 3. Click **Load unpacked** and select this directory.
@@ -184,3 +190,6 @@ the prototype setter survived, and only the latter enables the Save button.
 | `src/precinct-map.js` | GENERATED precinct lookup table — do not edit |
 | `tools/build-precincts.js` | Builds precinct-map.js from precincts.csv |
 | `precincts.csv` | Source of truth for the precinct table, exported from BigQuery |
+| `tools/build-crx.sh` | Packs and signs the .crx, regenerates the update manifest |
+| `docs/updates.xml` | GENERATED update manifest Chrome polls for new versions |
+| `docs/DEPLOYMENT.md` | Self-hosting, enterprise policy, and release process |
