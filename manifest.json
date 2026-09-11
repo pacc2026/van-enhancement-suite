@@ -1,0 +1,40 @@
+{
+  "manifest_version": 3,
+  "name": "VAN Enhancement Suite",
+  "version": "0.3.0",
+  "description": "Checkbox Targets picker, GOTV Turf Cutting mode, and precinct-based prefill for VAN's list building and turf cutting pages.",
+  "content_scripts": [
+    {
+      "matches": [
+        "https://*.votebuilder.com/CreateAList.aspx*"
+      ],
+      "js": [
+        "src/targets-checkboxes.js",
+        "src/gotv-mode.js"
+      ],
+      "world": "MAIN",
+      "run_at": "document_idle"
+    },
+    {
+      "matches": [
+        "https://*.votebuilder.com/CreateAList.aspx*"
+      ],
+      "css": [
+        "src/targets-checkboxes.css",
+        "src/gotv-mode.css"
+      ],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": [
+        "https://*.votebuilder.com/TurfCutter.aspx*"
+      ],
+      "js": [
+        "src/precinct-map.js",
+        "src/save-region.js"
+      ],
+      "world": "MAIN",
+      "run_at": "document_idle"
+    }
+  ]
+}

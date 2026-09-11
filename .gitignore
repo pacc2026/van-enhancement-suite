@@ -1,0 +1,9 @@
+# macOS
+.DS_Store
+
+# Extension signing key — NEVER commit this. Whoever holds it controls
+# updates to every installed copy of the extension.
+*.pem
+
+# Packed extension builds
+*.crx

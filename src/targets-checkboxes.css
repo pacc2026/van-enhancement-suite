@@ -1,0 +1,63 @@
+/* Mirrors the plain checkbox column VAN already uses for the Suppressions
+   section directly below Targets, so the replacement reads as native. */
+
+.ves-replaced {
+  display: none !important;
+}
+
+.ves-targets {
+  padding: 2px 0;
+}
+
+.ves-group {
+  margin-bottom: 10px;
+}
+
+.ves-group:last-child {
+  margin-bottom: 0;
+}
+
+.ves-group-title,
+.ves-leaf {
+  display: block;
+  margin: 0;
+  font-weight: normal;
+  line-height: 1.6;
+  cursor: pointer;
+}
+
+.ves-group-title {
+  font-weight: bold;
+}
+
+.ves-leaf {
+  padding-left: 18px;
+}
+
+.ves-group-title input,
+.ves-leaf input {
+  margin: 0 6px 0 0;
+  vertical-align: baseline;
+}
+
+.ves-match {
+  display: inline-block;
+}
+
+.ves-match-option {
+  display: inline-block;
+  margin: 0 14px 0 0;
+  font-weight: normal;
+  cursor: pointer;
+}
+
+.ves-match-option input {
+  margin: 0 5px 0 0;
+  vertical-align: baseline;
+}
+
+/* VAN's own .table-paired-value rules are more specific, so force this one. */
+.ves-row > td,
+.ves-row > th {
+  vertical-align: top !important;
+}

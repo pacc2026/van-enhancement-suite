@@ -1,0 +1,93 @@
+/* GOTV Turf Cutting mode */
+
+.ves-gotv-hidden {
+  display: none !important;
+}
+
+/* Locked controls keep their `name` and still post; they are only made
+   non-interactive. See the note in gotv-mode.js about `disabled`. */
+.ves-locked {
+  pointer-events: none !important;
+  opacity: 0.65;
+}
+
+/* Fallback position: a banner above the first section. */
+.ves-gotv-bar {
+  margin: 0 0 12px;
+  padding: 10px 14px;
+  background: #f4f6f8;
+  border: 1px solid #d6dbe0;
+  border-radius: 4px;
+}
+
+/* Inline with the page heading. It becomes a flex item of h5.page-title, whose
+   24px/700 type has to be reset off it. */
+.ves-gotv-bar-inline {
+  display: inline-flex;
+  align-self: center;
+  flex: 0 0 auto;
+  margin: 0 0 0 24px;
+  padding: 0;
+  background: none;
+  border: 0;
+  font-size: 13px;
+  font-weight: normal;
+  line-height: 1;
+  letter-spacing: normal;
+  text-transform: none;
+  white-space: nowrap;
+}
+
+.ves-gotv-toggle {
+  display: inline-flex;
+  align-items: center;
+  margin: 0;
+  font-weight: bold;
+  cursor: pointer;
+  user-select: none;
+}
+
+/* The native checkbox stays in the DOM for accessibility and keyboard use,
+   but is visually replaced by the track/thumb below. */
+.ves-gotv-switch {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+}
+
+.ves-gotv-track {
+  position: relative;
+  display: inline-block;
+  width: 38px;
+  height: 20px;
+  margin-right: 9px;
+  background: #b6bfc8;
+  border-radius: 10px;
+  transition: background 120ms ease-in-out;
+}
+
+.ves-gotv-thumb {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 16px;
+  height: 16px;
+  background: #fff;
+  border-radius: 50%;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
+  transition: transform 120ms ease-in-out;
+}
+
+.ves-gotv-switch:checked + .ves-gotv-track {
+  background: #2b7a3d;
+}
+
+.ves-gotv-switch:checked + .ves-gotv-track .ves-gotv-thumb {
+  transform: translateX(18px);
+}
+
+.ves-gotv-switch:focus-visible + .ves-gotv-track {
+  outline: 2px solid #1a5fb4;
+  outline-offset: 2px;
+}
