@@ -190,6 +190,9 @@ the prototype setter survived, and only the latter enables the Save button.
 | `src/precinct-map.js` | GENERATED precinct lookup table — do not edit |
 | `tools/build-precincts.js` | Builds precinct-map.js from precincts.csv |
 | `precincts.csv` | Source of truth for the precinct table, exported from BigQuery |
+| `icon-source.webp` | Source image the icon set is generated from |
+| `src/icons/` | GENERATED icon set — 16/32 px cropped, 48/128 px whole van |
+| `tools/build-icons.py` | Builds the icon set from icon-source.webp |
 | `tools/build-crx.sh` | Packs and signs the .crx, regenerates the update manifest |
 | `docs/updates.xml` | GENERATED update manifest Chrome polls for new versions |
 | `docs/DEPLOYMENT.md` | Self-hosting, enterprise policy, and release process |
