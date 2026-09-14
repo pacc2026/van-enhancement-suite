@@ -119,15 +119,16 @@ and no `.select2-chosen`. The chosen values render as `.select2-search-choice`
 chips over a hidden input holding ids rather than names, so `readRowValue()`
 reads the chips. It never falls back to `input[type="text"]` — on these rows
 that matches Select2's own search box, which is always empty. Precinct chips
-read as `Philadelphia 02-01`, matching `van_precinct_nam` exactly. More than
+read as `Philadelphia 02-01`, matching `van_precinct_name` exactly. More than
 one chip means the selection is ambiguous, and nothing is stashed.
 
 When the modal opens, the pair is looked up in the bundled table and the fields
 are filled:
 
-- **Region Name** = `list_name` + `MMDD`. The exported `list_name` values
-  already end with `_`, which is the separator the date slots into:
-  `DR01_Philadelphia_02-01_` + `0910` → `DR01_Philadelphia_02-01_0910`.
+- **Region Name** = `list_name` + `_` + `MMDD`:
+  `GOTV_Philadelphia_02-01` → `GOTV_Philadelphia_02-01_0910`. Trailing
+  underscores on `list_name` are stripped first, so there is never a double
+  separator.
 - **Folder** = the `folder` column, matched against the dropdown by text.
 
 If the precinct isn't in the table, or nothing is stashed, both fields are left

@@ -18,7 +18,7 @@ var path = require('path');
 var INPUT = process.argv[2] || 'precincts.csv';
 var OUTPUT = process.argv[3] || path.join('src', 'precinct-map.js');
 
-var REQUIRED_COLUMNS = ['van_county', 'van_precinct_nam', 'folder', 'list_name'];
+var REQUIRED_COLUMNS = ['van_county', 'van_precinct_name', 'folder', 'list_name'];
 
 // Minimal RFC 4180 reader: handles quoted fields and embedded commas so a
 // precinct named "Smith, North" cannot silently shift every later column.
@@ -77,7 +77,7 @@ function main() {
 
   rows.slice(1).forEach(function (r) {
     var county = (r[at.van_county] || '').trim();
-    var precinct = (r[at.van_precinct_nam] || '').trim();
+    var precinct = (r[at.van_precinct_name] || '').trim();
     var folder = (r[at.folder] || '').trim();
     var listName = (r[at.list_name] || '').trim();
 
