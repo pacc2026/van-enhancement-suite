@@ -7,7 +7,7 @@ parts:
   dropdown becomes a flat, grouped checkbox list, and the Any/All Match Type
   select becomes radio buttons.
 - **GOTV Turf Cutting mode** (`CreateAList.aspx`) — a switch that strips the
-  form down to County, the Dry Run Universe > Doors target, and the
+  form down to County, the Final Four > Doors target, and the
   suppressions, with everything preset and locked.
 - **Save My Map Region prefill** (`TurfCutter.aspx`) — fills the region name
   and folder from the precinct chosen upstream, so each turf is named to the
@@ -74,9 +74,12 @@ cutting needs:
   fire on a county change and the row list is unchanged through both.) The
   content script re-runs on that load anyway; the MutationObserver covers
   later client-side changes.
-- Targets shows only Dry Run Universe > Doors, checked and locked. The target
-  is resolved **by title**, not by node key, since keys like `Target35|1`
-  differ between committees.
+- Targets shows only Final Four > Doors, checked and locked. The target is
+  resolved **by title prefix**, not by node key, since keys like `Target35|1`
+  differ between committees: a group starting with `Final Four` holding a
+  target starting with `Doors`, so a final name like "Final Four Universe" or
+  "Doors Universe" still matches. Matching is case-sensitive, and the first
+  match wins.
 - All five suppressions checked, `Include Deceased` and `Include Do Not Email`
   set, and the "Remove All Suppressions" link hidden.
 

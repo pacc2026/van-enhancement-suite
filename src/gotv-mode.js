@@ -1,8 +1,8 @@
 // "GOTV Turf Cutting" mode for CreateAList.aspx.
 //
 // Strips the search form down to the handful of inputs turf cutting actually
-// needs: County (plus Precinct once VAN loads it), the Dry Run Universe >
-// Doors target, and the suppressions block with everything switched on.
+// needs: County (plus Precinct once VAN loads it), the Final Four > Doors
+// target, and the suppressions block with everything switched on.
 //
 // Runs in the MAIN world alongside targets-checkboxes.js.
 //
@@ -26,7 +26,10 @@
   var PRECINCT_KEY = 'ves:selected-precinct';
   var STAMP_KEY = 'ves:selection-stamp';
 
-  var TARGET_GROUP = 'Dry Run Universe';
+  // Matched as title prefixes, not exact titles: the target isn't loaded into
+  // VAN yet, and its final wording may add "Universe" to either the group or
+  // the leaf. Case-sensitive; the first match in tree order wins.
+  var TARGET_GROUP = 'Final Four';
   var TARGET_LEAF = 'Doors';
 
   // Value of the DataBaseModeID field on the MyVoters side. MyCampaign is '1'.
@@ -153,13 +156,17 @@
     return null;
   }
 
+  function startsWith(title, prefix) {
+    return typeof title === 'string' && title.indexOf(prefix) === 0;
+  }
+
   function findTargetNode(tree) {
     var found = null;
     tree.visit(function (node) {
       if (found) return false;
-      if (node.title === TARGET_LEAF) {
+      if (startsWith(node.title, TARGET_LEAF)) {
         var parent = node.getParent();
-        if (parent && parent.title === TARGET_GROUP) {
+        if (parent && startsWith(parent.title, TARGET_GROUP)) {
           found = node;
           return false;
         }
@@ -368,7 +375,7 @@
   function applyTargets(tree) {
     var node = findTargetNode(tree);
     if (!node) {
-      log('Could not find the "' + TARGET_GROUP + ' > ' + TARGET_LEAF + '" target.');
+      log('Could not find a "' + TARGET_GROUP + '* > ' + TARGET_LEAF + '*" target.');
     } else if (!node.isSelected()) {
       node.setSelected(true);
     }
