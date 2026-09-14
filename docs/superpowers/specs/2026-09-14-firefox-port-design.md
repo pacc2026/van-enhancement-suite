@@ -12,6 +12,13 @@ Firefox supports it from version 140. The Firefox manifest therefore also sets
 `strict_min_version` is raised from `128.0` to `140.0`. References to Firefox
 128 below are superseded by 140.
 
+The generated manifest also sets
+`browser_specific_settings.gecko_android.strict_min_version` to `142.0`,
+because `web-ext lint` checks the Android floor against
+`data_collection_permissions` (Android supports it from 142). Firefox for
+Android remains unsupported; this floor exists only to keep lint clean, not
+to enable Android installs.
+
 ## Goal
 
 Make VAN Enhancement Suite installable and auto-updating in desktop Firefox for

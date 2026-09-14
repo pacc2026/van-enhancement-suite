@@ -952,15 +952,22 @@ Expected: the JSON advertises `0.3.2`, and `updates.xml` returns `HTTP/2 200`. F
 
 - [ ] **Step 4: Build a throwaway test version [user approval]**
 
-This spends version `0.3.2.1` on AMO forever, and nothing ever reuses it. Chrome isn't involved.
+This spends version `0.3.4.1` on AMO forever, and nothing ever reuses it. Chrome isn't involved.
 
 ```bash
-sed -i '' 's/"version": "0.3.2"/"version": "0.3.2.1"/' manifest.json
+sed -i '' 's/"version": "0.3.4"/"version": "0.3.4.1"/' manifest.json
 tools/build-xpi.sh
 git checkout -- manifest.json
-gh release create v0.3.2.1 build/van-enhancement-suite-0.3.2.1.xpi --prerelease --title "v0.3.2.1 (Firefox update test)" --notes "Throwaway build to verify Firefox auto-update. Do not install."
+gh release create v0.3.4.1 build/van-enhancement-suite-0.3.4.1.xpi --prerelease --title "v0.3.4.1 (Firefox update test)" --notes "Throwaway build to verify Firefox auto-update. Do not install."
 git add docs/updates.json
-git commit -m "Advertise Firefox test version 0.3.2.1"
+git commit -m "Advertise Firefox test version 0.3.4.1"
+```
+
+Before pushing, check branch protection: `gh api repos/pacc2026/van-enhancement-suite/rulesets` and
+`gh api repos/pacc2026/van-enhancement-suite/branches/main/protection`. If pushes to `main` are
+blocked, open a PR for the `updates.json` commit instead of pushing directly.
+
+```bash
 git push origin main
 ```
 
@@ -968,9 +975,9 @@ If Task 6 chose the Pages copy, `build-xpi.sh` also updated `docs/van-enhancemen
 
 - [ ] **Step 5: User verifies auto-update**
 
-1. Wait until `curl -s https://pacc2026.github.io/van-enhancement-suite/updates.json` shows `0.3.2.1`.
-2. In the test profile from Task 6 (with 0.3.2 installed), go to `about:addons` → gear menu → **Check for Updates**.
-3. Confirm VAN Enhancement Suite now shows version 0.3.2.1 and the Targets picker still works on `CreateAList.aspx`.
+1. Wait until `curl -s https://pacc2026.github.io/van-enhancement-suite/updates.json` shows `0.3.4.1`.
+2. In the test profile from Task 6 (with 0.3.4 installed), go to `about:addons` → gear menu → **Check for Updates**.
+3. Confirm VAN Enhancement Suite now shows version 0.3.4.1 and the Targets picker still works on `CreateAList.aspx`.
 
 Expected: it updates without a prompt. If not, check `about:config` → `extensions.logging.enabled` = true, rerun the check, and read the Browser Console (Cmd+Shift+J) for the update error before changing anything.
 
