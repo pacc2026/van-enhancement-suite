@@ -20,9 +20,20 @@ parts:
 
 ## Install
 
-Staff do not install this by hand. It is self-hosted and force-installed on
-managed browsers through enterprise policy — see
+**Chrome:** staff do not install this by hand. It is self-hosted and
+force-installed on managed browsers through enterprise policy — see
 [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) for the rollout and release steps.
+
+**Firefox (140 or newer):**
+
+1. Open the `van-enhancement-suite-<version>.xpi` asset on the
+   [latest release](https://github.com/pacc2026/van-enhancement-suite/releases/latest)
+   in Firefox.
+2. Click **Add** when Firefox asks to add VAN Enhancement Suite. It asks for
+   access to your data on votebuilder.com — that is how it changes VAN's pages.
+3. Reload any open VAN page.
+
+Firefox checks for updates on its own; there is nothing to reinstall.
 
 To run it locally while developing:
 
@@ -30,6 +41,11 @@ To run it locally while developing:
 2. Turn on **Developer mode** (top right).
 3. Click **Load unpacked** and select this directory.
 4. Reload `CreateAList.aspx`.
+
+To run it locally in Firefox, run `tools/build-xpi.sh --unsigned`, then in
+`about:debugging` → **This Firefox** → **Load Temporary Add-on**, select
+`build/firefox/manifest.json`. Temporary add-ons are removed when Firefox
+quits.
 
 ## How it works
 
@@ -204,7 +220,12 @@ the prototype setter survived, and only the latter enables the Save button.
 | `src/icons/` | GENERATED icon set — 16/32 px cropped, 48/128 px whole van |
 | `tools/build-icons.py` | Builds the icon set from icon-source.webp |
 | `tools/build-crx.sh` | Packs and signs the .crx, regenerates the update manifest |
+| `tools/build-xpi.sh` | Builds and Mozilla-signs the Firefox .xpi, regenerates updates.json |
+| `tools/firefox-manifest.js` | Generates the Firefox manifest from manifest.json at build time |
+| `tools/firefox-updates.js` | Writes the Firefox update manifest for a signed .xpi |
+| `tools/*.test.js` | Tests for the Firefox build tools — `node --test 'tools/*.test.js'` |
 | `docs/updates.xml` | GENERATED update manifest Chrome polls for new versions |
+| `docs/updates.json` | GENERATED update manifest Firefox polls for new versions |
 | `docs/DEPLOYMENT.md` | Self-hosting, enterprise policy, and release process |
 
 ## Legal

@@ -1,14 +1,18 @@
 # Deploying VAN Enhancement Suite
 
-This extension is **self-hosted** — it is not in the Chrome Web Store. Chrome
-only permits self-hosted extensions in managed environments, so it reaches
-users through enterprise policy, not by clicking an install link.
+This extension is **self-hosted** — it is in neither the Chrome Web Store nor
+the public Firefox add-ons site. Chrome permits self-hosted extensions only in
+managed environments, so Chrome users get it through enterprise policy.
+Firefox installs any Mozilla-signed add-on, so Firefox users install it from a
+link — see [Firefox](#firefox).
 
 | | |
 |---|---|
-| Extension ID | `cdpjodhdenpjghbajpdlbbhpmdbcpcjh` |
-| Update manifest | `https://pacc2026.github.io/van-enhancement-suite/updates.xml` |
-| CRX downloads | [GitHub releases](https://github.com/pacc2026/van-enhancement-suite/releases) |
+| Chrome extension ID | `cdpjodhdenpjghbajpdlbbhpmdbcpcjh` |
+| Chrome update manifest | `https://pacc2026.github.io/van-enhancement-suite/updates.xml` |
+| Firefox add-on ID | `van-enhancement-suite@pacc2026.github.io` |
+| Firefox update manifest | `https://pacc2026.github.io/van-enhancement-suite/updates.json` |
+| Downloads (.crx and .xpi) | [GitHub releases](https://github.com/pacc2026/van-enhancement-suite/releases) |
 
 The extension ID is derived from the signing key and is permanent. It changes
 only if the key is lost or replaced — at which point every installed copy
@@ -76,24 +80,78 @@ still takes precedence — no separate allowlist entry is needed.
 
 ## Ship a new version
 
-Chrome polls the update manifest every few hours and installs whatever
-`codebase` points at when its `version` is higher than the installed one. So a
-release is: bump, pack, upload, then publish the manifest.
+Both browsers poll their update manifest and install the linked file when its
+`version` is higher than the installed one. A release is: bump, build both,
+upload, then publish both manifests.
 
-1. Bump `"version"` in `manifest.json` (Chrome will not downgrade, and will
-   ignore a release whose version it already has).
+1. Bump `"version"` in `manifest.json`. Neither browser downgrades, and
+   addons.mozilla.org never accepts the same version twice — even one whose
+   signing failed.
 2. Regenerate the precinct map if `precincts.csv` changed:
    `node tools/build-precincts.js`
-3. Pack and sign, passing the signing key:
+3. Pack and sign for Chrome, passing the signing key:
    `tools/build-crx.sh /path/to/van-enhancement-suite.pem`
-4. Attach the CRX to a matching tag:
-   `gh release create v<version> build/van-enhancement-suite-<version>.crx --title v<version> --notes "..."`
-5. Commit the regenerated `docs/updates.xml`. **This is the step that actually
-   ships** — until the manifest advertises the new version, nothing updates.
+4. Pack and sign for Firefox, with AMO credentials in the environment:
+   `WEB_EXT_API_KEY=... WEB_EXT_API_SECRET=... tools/build-xpi.sh`
+5. Attach both to a matching tag:
+   `gh release create v<version> build/van-enhancement-suite-<version>.crx build/van-enhancement-suite-<version>.xpi --title v<version> --notes "..."`
+6. Commit the regenerated `docs/updates.xml` and `docs/updates.json`. **This is
+   the step that actually ships** — until a manifest advertises the new
+   version, nothing updates.
 
-Do steps 4 and 5 in that order. If the manifest advertises a version whose
-release is not uploaded yet, every managed browser gets a download error until
-it is.
+Do steps 5 and 6 in that order. If a manifest advertises a version whose file
+is not uploaded yet, every copy in that browser gets a download error until it
+is.
+
+### When Mozilla is slow
+
+Signing usually takes minutes but can take up to 24 hours, or longer if
+Mozilla picks the version for manual review. Chrome does not have to wait:
+
+1. Create the release with the `.crx` only, and commit only `docs/updates.xml`.
+2. When signing finishes (`tools/build-xpi.sh` prints the recovery steps if it
+   timed out), `gh release upload v<version> build/van-enhancement-suite-<version>.xpi`.
+3. Commit `docs/updates.json`.
+
+## Firefox
+
+Firefox users are not managed, so there is no policy to push. Release Firefox
+installs only add-ons Mozilla has signed, including self-distributed ones, so
+each version is submitted to addons.mozilla.org (AMO) on the **unlisted**
+channel: Mozilla validates and signs it, and it never appears in public
+search. Volunteers install once from a link, and Firefox keeps them updated
+from `updates.json`.
+
+- **Minimum version:** Firefox 140. Firefox for Android is not supported; the
+  manifest's `gecko_android` floor (142) exists only to keep `web-ext lint`
+  clean.
+- **Add-on ID:** `van-enhancement-suite@pacc2026.github.io`. Permanent: AMO
+  binds it on the first signing. A different ID is a different add-on that
+  every volunteer would have to reinstall.
+- **Install link for volunteers:** the `van-enhancement-suite-<version>.xpi`
+  asset on the [latest release](https://github.com/pacc2026/van-enhancement-suite/releases/latest)
+- **Data collection:** the manifest declares none, which AMO requires of every
+  new add-on. Keep it that way unless the extension starts sending data
+  somewhere.
+
+The Firefox manifest is generated at build time by `tools/firefox-manifest.js`
+from `manifest.json`. Never hand-edit a Firefox manifest; change the transform.
+
+### The AMO account and API credentials
+
+The AMO account and its API key and secret are to Firefox what the `.pem` is
+to Chrome: whoever holds them can push code to every installed Firefox copy.
+
+- The account belongs to the team, not to one person's Firefox account.
+- The key and secret live in the team password manager, reachable by more than
+  one person. Generate them at
+  https://addons.mozilla.org/developers/addon/api/key/.
+- Pass them to `tools/build-xpi.sh` as `WEB_EXT_API_KEY` and
+  `WEB_EXT_API_SECRET` environment variables. Never commit them.
+
+If Mozilla requests source code during a manual review, `src/precinct-map.js`
+is generated from `precincts.csv` by `tools/build-precincts.js`; both are in
+this repo.
 
 ## The signing key
 
