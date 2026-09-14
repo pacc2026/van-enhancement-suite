@@ -23,6 +23,12 @@ var UPDATES_JSON_URL = 'https://pacc2026.github.io/van-enhancement-suite/updates
 // data_collection_permissions, which Firefox understands from 140.
 var MIN_FIREFOX = '140.0';
 
+// Firefox for Android isn't supported, but lint checks the Android floor
+// against data_collection_permissions too, and Android only understands that
+// key from 142 — a higher floor than desktop's. Declare gecko_android's own
+// floor rather than raise the desktop one.
+var MIN_FIREFOX_ANDROID = '142.0';
+
 function toFirefoxManifest(chrome) {
   var firefox = JSON.parse(JSON.stringify(chrome));
   delete firefox.key;
@@ -34,6 +40,9 @@ function toFirefoxManifest(chrome) {
       update_url: UPDATES_JSON_URL,
       // The extension only rearranges VAN's own pages; nothing leaves the browser.
       data_collection_permissions: { required: ['none'] }
+    },
+    gecko_android: {
+      strict_min_version: MIN_FIREFOX_ANDROID
     }
   };
   return firefox;

@@ -26,6 +26,9 @@ test('adds the gecko settings', function () {
       strict_min_version: '140.0',
       update_url: 'https://pacc2026.github.io/van-enhancement-suite/updates.json',
       data_collection_permissions: { required: ['none'] }
+    },
+    gecko_android: {
+      strict_min_version: '142.0'
     }
   });
 });
