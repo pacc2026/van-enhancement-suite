@@ -96,6 +96,9 @@ cutting needs:
   target starting with `Doors`, so a final name like "Final Four Universe" or
   "Doors Universe" still matches. Matching is case-sensitive, and the first
   match wins.
+- If no matching target exists in VAN yet, the mode leaves Targets unlocked
+  and shows a notice asking the user to choose targets, rather than locking
+  an empty list.
 - All five suppressions checked, `Include Deceased` and `Include Do Not Email`
   set, and the "Remove All Suppressions" link hidden.
 

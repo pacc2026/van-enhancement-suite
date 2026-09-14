@@ -32,6 +32,12 @@
   var TARGET_GROUP = 'Final Four';
   var TARGET_LEAF = 'Doors';
 
+  // Shown in place of the usual "select and lock" behavior when the target
+  // above cannot be found (see the comment in applyTargets).
+  var MISSING_TARGET_TEXT =
+    'GOTV Turf Cutting Mode could not find the Final Four > Doors target in ' +
+    'VAN. Choose your targets below before running the search.';
+
   // Value of the DataBaseModeID field on the MyVoters side. MyCampaign is '1'.
   var MYVOTERS_MODE_ID = '0';
 
@@ -372,11 +378,53 @@
     districtObserver.observe(panel, { childList: true, subtree: true });
   }
 
+  // Tells the user the auto-selection did not happen. Placed right above
+  // whichever Targets UI is on the page, so it reads as attached to that list
+  // rather than as a generic page banner.
+  function insertMissingTargetNotice() {
+    var notice = document.createElement('div');
+    notice.className = 'ves-gotv-notice';
+    notice.setAttribute('role', 'status');
+    notice.textContent = MISSING_TARGET_TEXT;
+
+    var list = document.querySelector('.ves-targets');
+    if (list && list.parentNode) {
+      list.parentNode.insertBefore(notice, list);
+      return;
+    }
+
+    var native = document.getElementById('TargetsSubGroups_treeview-container');
+    var nativeRow = native && native.closest('tr');
+    if (nativeRow && nativeRow.parentNode) {
+      nativeRow.parentNode.insertBefore(notice, nativeRow);
+      return;
+    }
+
+    var panel = document.getElementById('PanelSectionTargets');
+    if (panel) {
+      panel.insertBefore(notice, panel.firstChild);
+      return;
+    }
+
+    log('Could not find a place to show the missing-target notice.');
+  }
+
   function applyTargets(tree) {
     var node = findTargetNode(tree);
     if (!node) {
       log('Could not find a "' + TARGET_GROUP + '* > ' + TARGET_LEAF + '*" target.');
-    } else if (!node.isSelected()) {
+
+      // Fail open: the target is not in VAN yet, so there is nothing to
+      // select. Hiding every other group and disabling the checkboxes (the
+      // normal behavior below) would leave a locked, empty Targets area,
+      // which lets a turf cut run with no target filter at all and no way to
+      // fix it short of turning the mode off. Leave Targets exactly as VAN
+      // rendered it and tell the user to pick by hand instead.
+      insertMissingTargetNotice();
+      return;
+    }
+
+    if (!node.isSelected()) {
       node.setSelected(true);
     }
 
@@ -404,7 +452,7 @@
     // Show only the group block containing our target; lock what remains.
     var blocks = list.querySelectorAll('.ves-group');
     [].forEach.call(blocks, function (block) {
-      var mine = node && block.querySelector('[data-ves-key="' + node.key + '"]');
+      var mine = block.querySelector('[data-ves-key="' + node.key + '"]');
       if (mine) {
         block.classList.remove(HIDDEN_CLASS);
       } else {
@@ -500,6 +548,11 @@
     });
     [].forEach.call(document.querySelectorAll('.' + LOCKED_CLASS), function (el) {
       el.classList.remove(LOCKED_CLASS);
+    });
+    // apply() always calls clear() first, so any notice left over from a
+    // previous apply() has to go here or it would pile up duplicates.
+    [].forEach.call(document.querySelectorAll('.ves-gotv-notice'), function (el) {
+      if (el.parentNode) el.parentNode.removeChild(el);
     });
     var list = document.querySelector('.ves-targets');
     if (list) {
