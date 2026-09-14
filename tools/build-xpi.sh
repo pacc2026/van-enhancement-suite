@@ -41,8 +41,10 @@ SIGNED_DIR=build/firefox-signed
 XPI="build/van-enhancement-suite-${VERSION}.xpi"
 
 # --- stage only what ships -------------------------------------------------
-# Clean only this script's own outputs; build/ also holds the Chrome .crx.
-rm -rf "$STAGE" "$SIGNED_DIR" "$XPI"
+# Clean only this script's own outputs; build/ also holds the Chrome .crx and,
+# on --unsigned, a previously signed .xpi that AMO will never re-sign, so that
+# one is left alone here and removed only on the signing path below.
+rm -rf "$STAGE" "$SIGNED_DIR"
 mkdir -p "$STAGE"
 cp -R src "$STAGE/"
 node tools/firefox-manifest.js manifest.json "$STAGE/manifest.json"
@@ -63,6 +65,7 @@ fi
 # --- sign ------------------------------------------------------------------
 # web-ext reads WEB_EXT_API_KEY / WEB_EXT_API_SECRET from the environment, so
 # the credentials never appear in the process list.
+rm -f "$XPI"
 if ! npx --yes "$WEB_EXT" sign --source-dir "$STAGE" --artifacts-dir "$SIGNED_DIR" \
     --channel unlisted --timeout 900000 --no-input --no-config-discovery; then
   cat >&2 <<MSG
