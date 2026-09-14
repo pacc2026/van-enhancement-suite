@@ -215,6 +215,9 @@ the prototype setter survived, and only the latter enables the Save button.
 | `src/targets-checkboxes.css` | Styling matched to VAN's existing checkbox lists |
 | `src/gotv-mode.js` | The GOTV Turf Cutting toggle and its presets |
 | `src/gotv-mode.css` | Toggle switch and locked/hidden styling |
+| `src/popup/popup.html` | Toolbar popup: icon, name, version, help link, ownership line |
+| `src/popup/popup.css` | Popup styling |
+| `src/popup/popup.js` | Fills in the popup's version and year |
 | `src/save-region.js` | Prefills the Save My Map Region modal on TurfCutter.aspx |
 | `src/precinct-map.js` | GENERATED precinct lookup table — do not edit |
 | `tools/build-precincts.js` | Builds precinct-map.js from precincts.csv |
@@ -226,7 +229,7 @@ the prototype setter survived, and only the latter enables the Save button.
 | `tools/build-xpi.sh` | Builds and Mozilla-signs the Firefox .xpi, regenerates updates.json |
 | `tools/firefox-manifest.js` | Generates the Firefox manifest from manifest.json at build time |
 | `tools/firefox-updates.js` | Writes the Firefox update manifest for a signed .xpi |
-| `tools/*.test.js` | Tests for the Firefox build tools — `node --test 'tools/*.test.js'` |
+| `tools/*.test.js` | Tests for the Firefox build tools and the popup script — `node --test 'tools/*.test.js'` |
 | `docs/updates.xml` | GENERATED update manifest Chrome polls for new versions |
 | `docs/updates.json` | GENERATED update manifest Firefox polls for new versions |
 | `docs/DEPLOYMENT.md` | Self-hosting, enterprise policy, and release process |
