@@ -197,13 +197,37 @@ names, addresses, and any voter details before uploading.
 
 ### Moving force-installed staff to the store copy
 
-Once the store version is live and its ID is confirmed: in the Google Admin
-console (**Devices → Chrome → Apps & extensions → Users & browsers**), select
-`cdpjodhdenpjghbajpdlbbhpmdbcpcjh` and change its source from **From a custom
-URL** to **Chrome Web Store**, keeping **Force install**. Because the ID is
-unchanged, installed copies switch update source without reinstalling. The
-self-hosted `updates.xml` and `.crx` releases stay until every org unit is
-switched; retire them in a separate change.
+This migration is **unverified** (as of 2026-09-14) and must be tested on an
+org unit containing one test user before it is rolled out to everyone.
+
+Google's own ExtensionSettings policy documentation says the policy's update
+URL is used only for the extension's *initial* install; later updates come
+from the `update_url` in the installed extension's own manifest, and
+`override_update_url` does not apply once the source is the Chrome Web Store
+— see [chromeenterprise.google/policies/extension-settings](https://chromeenterprise.google/policies/extension-settings/).
+Switching the Admin console source alone therefore probably does **not** move
+already-installed copies to the store; it only changes where a *new* install
+comes from.
+
+What is likely required, once the store version is live:
+
+1. Ship one last self-hosted release whose manifest has **no `update_url`**
+   (keep `key`), published via `updates.xml` as usual. An installed extension
+   without `update_url` falls back to updating from the Chrome Web Store, and
+   because the signing key is unchanged the extension ID stays the same.
+2. Switch the Admin console source for `cdpjodhdenpjghbajpdlbbhpmdbcpcjh` from
+   **From a custom URL** to **Chrome Web Store**, keeping **Force install**,
+   so new installs come from the store.
+3. On the test user's `chrome://extensions`, verify the next store-only
+   version arrives before rolling this out to everyone else.
+
+Do not retire `updates.xml` or the `.crx` releases until managed copies are
+confirmed updating from the store — retiring them early would strand staff on
+that last self-hosted version.
+
+Producing a no-`update_url` `.crx` isn't automated yet: `tools/build-crx.sh`
+ships `manifest.json` as-is, `key` and `update_url` included. That will be a
+small change to the script, made when this migration actually happens.
 
 ### Installing as a volunteer
 
