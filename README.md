@@ -20,9 +20,13 @@ parts:
 
 ## Install
 
-**Chrome:** staff do not install this by hand. It is self-hosted and
-force-installed on managed browsers through enterprise policy — see
-[docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) for the rollout and release steps.
+**Chrome:** staff on managed browsers get it automatically through enterprise
+policy. Anyone else with access — members of the extension's Google Group —
+installs it from the private
+[Chrome Web Store listing](https://chromewebstore.google.com/detail/cdpjodhdenpjghbajpdlbbhpmdbcpcjh)
+(available once the listing is approved) while signed in to Chrome with that
+Google account. See
+[docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) for rollout and release steps.
 
 **Firefox (140 or newer):**
 
@@ -229,9 +233,12 @@ the prototype setter survived, and only the latter enables the Save button.
 | `tools/build-xpi.sh` | Builds and Mozilla-signs the Firefox .xpi, regenerates updates.json |
 | `tools/firefox-manifest.js` | Generates the Firefox manifest from manifest.json at build time |
 | `tools/firefox-updates.js` | Writes the Firefox update manifest for a signed .xpi |
-| `tools/*.test.js` | Tests for the Firefox build tools and the popup script — `node --test 'tools/*.test.js'` |
+| `tools/build-cws-zip.sh` | Builds the Chrome Web Store upload zip; `--with-key` for the first upload only |
+| `tools/cws-manifest.js` | Generates the Chrome Web Store manifest (no `key` or `update_url`) |
+| `tools/*.test.js` | Tests for the build tools and the popup script — `node --test 'tools/*.test.js'` |
 | `docs/updates.xml` | GENERATED update manifest Chrome polls for new versions |
 | `docs/updates.json` | GENERATED update manifest Firefox polls for new versions |
+| `docs/privacy.md` | Privacy policy linked from the Chrome Web Store listing |
 | `docs/DEPLOYMENT.md` | Self-hosting, enterprise policy, and release process |
 
 ## Legal

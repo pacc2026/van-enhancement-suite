@@ -1,15 +1,17 @@
 # Deploying VAN Enhancement Suite
 
-This extension is **self-hosted** — it is in neither the Chrome Web Store nor
-the public Firefox add-ons site. Chrome permits self-hosted extensions only in
-managed environments, so Chrome users get it through enterprise policy.
-Firefox installs any Mozilla-signed add-on, so Firefox users install it from a
-link — see [Firefox](#firefox).
+This extension reaches users three ways. Managed Chrome profiles get it
+through enterprise policy, from a self-hosted update URL. Anyone in the
+extension's Google Group can install it from a **private** Chrome Web Store
+listing — see [Chrome Web Store](#chrome-web-store). Firefox users install a
+Mozilla-signed add-on from a link — see [Firefox](#firefox).
 
 | | |
 |---|---|
 | Chrome extension ID | `cdpjodhdenpjghbajpdlbbhpmdbcpcjh` |
 | Chrome update manifest | `https://pacc2026.github.io/van-enhancement-suite/updates.xml` |
+| Chrome Web Store (private) | `https://chromewebstore.google.com/detail/cdpjodhdenpjghbajpdlbbhpmdbcpcjh` (available once the listing is approved) |
+| Privacy policy | `https://pacc2026.github.io/van-enhancement-suite/privacy.html` |
 | Firefox add-on ID | `van-enhancement-suite@pacc2026.github.io` |
 | Firefox update manifest | `https://pacc2026.github.io/van-enhancement-suite/updates.json` |
 | Downloads (.crx and .xpi) | [GitHub releases](https://github.com/pacc2026/van-enhancement-suite/releases) |
@@ -81,17 +83,22 @@ still takes precedence — no separate allowlist entry is needed.
 ## Ship a new version
 
 Both browsers poll their update manifest and install the linked file when its
-`version` is higher than the installed one. A release is: bump, build both,
-upload, then publish both manifests.
+`version` is higher than the installed one. A release is: bump, build
+everything, upload, then publish both update manifests and submit the store
+upload.
 
 1. Bump `"version"` in `manifest.json`. Neither browser downgrades, and
    addons.mozilla.org never accepts the same version twice — even one whose
-   signing failed.
+   signing failed. The Chrome Web Store has the same rule: each upload must
+   carry a higher version than the last one uploaded, including one that was
+   rejected or is still pending review.
 2. Regenerate the precinct map if `precincts.csv` changed:
    `node tools/build-precincts.js`
 3. Pack and sign for Chrome, passing the signing key:
    `tools/build-crx.sh /path/to/van-enhancement-suite.pem`
-4. Pack and sign for Firefox, with AMO credentials read into the environment
+4. Build the Chrome Web Store zip (no key):
+   `tools/build-cws-zip.sh`
+5. Pack and sign for Firefox, with AMO credentials read into the environment
    without echoing them or saving them to shell history:
 
    ```bash
@@ -102,15 +109,24 @@ upload, then publish both manifests.
 
    Paste the key, press Enter, paste the secret, press Enter — nothing is
    shown.
-5. Attach both to a matching tag:
+6. Attach both to a matching tag (the `.crx` and `.xpi` only — never a zip):
    `gh release create v<version> build/van-enhancement-suite-<version>.crx build/van-enhancement-suite-<version>.xpi --title v<version> --notes "..."`
-6. Commit the regenerated `docs/updates.xml` and `docs/updates.json`. **This is
+7. Commit the regenerated `docs/updates.xml` and `docs/updates.json`. **This is
    the step that actually ships** — until a manifest advertises the new
    version, nothing updates.
+8. In the [Chrome Web Store developer dashboard](https://chrome.google.com/webstore/devconsole),
+   open the item → **Package** → **Upload new package**, upload
+   `build/van-enhancement-suite-<version>-cws.zip`, and **Submit for review**.
+   Store users get the version once review passes — review can take several
+   days; it does not depend on steps 6–7.
 
-Do steps 5 and 6 in that order. If a manifest advertises a version whose file
+Do steps 6 and 7 in that order. If a manifest advertises a version whose file
 is not uploaded yet, every copy in that browser gets a download error until it
 is.
+
+The three channels share one version number but can briefly sit on different
+versions of it, since store review is not instant. That's harmless: neither
+Chrome nor Firefox ever downgrades a user.
 
 ### When Mozilla is slow
 
@@ -121,6 +137,118 @@ Mozilla picks the version for manual review. Chrome does not have to wait:
 2. When signing finishes (`tools/build-xpi.sh` prints the recovery steps if it
    timed out), `gh release upload v<version> build/van-enhancement-suite-<version>.xpi`.
 3. Commit `docs/updates.json`.
+
+## Chrome Web Store
+
+The dashboard's exact labels, its visibility options (including whether
+"everyone in the domain" and trusted testers/groups can be combined), how a
+group gets added, and the number of certification checkboxes are unverified
+as of 2026-09-14 — confirm them during the first upload and correct this
+section as needed.
+
+The store listing is **private**: only members of the extension's Google Group
+can see or install it. Private items go through the same review as public
+ones, and review can take several days. It keeps the self-hosted extension
+ID, so it is the same extension whether it arrived by policy or from the
+store.
+
+### Before the first upload (Workspace admin)
+
+- In the Google Admin console, allow private Chrome Web Store publishing for
+  the domain.
+- Create the Google Group that should have access (nest an all-staff group
+  inside it if you like), and allow members from outside the organization if
+  volunteers use personal Google accounts. The group is added as a trusted
+  tester group in the developer account's settings; confirm in the dashboard
+  who is allowed to add it.
+
+### First upload — keeps the extension ID
+
+1. Build a zip that includes the signing key (see [The signing key](#the-signing-key)):
+   `tools/build-cws-zip.sh --with-key /path/to/van-enhancement-suite.pem`
+2. In the [developer dashboard](https://chrome.google.com/webstore/devconsole),
+   click **New item** and upload
+   `build/van-enhancement-suite-<version>-cws-with-key.zip`.
+3. **Check the item ID** the dashboard shows. It must be
+   `cdpjodhdenpjghbajpdlbbhpmdbcpcjh`. If it is anything else, delete the
+   draft before submitting — publishing it would create a second, separate
+   extension.
+4. Delete the with-key zip: `rm build/van-enhancement-suite-*-cws-with-key.zip`.
+   Every later upload uses the plain zip.
+
+Keeping the ID by uploading `key.pem` is reported by Chromium extension
+developers but not described in Google's current documentation — step 3 is
+what confirms it worked.
+
+### Distribution
+
+**Distribution** tab → Visibility **Private** → share with the Google Group
+(add it under the account's trusted testers / groups settings).
+
+### Privacy practices (paste these)
+
+- **Single purpose:** Speeds up VAN's list-building and turf-cutting pages for
+  campaign staff by simplifying target selection and prefilling turf-cutting
+  forms.
+- **Host permission justification (`https://*.votebuilder.com/CreateAList.aspx*`,
+  `https://*.votebuilder.com/TurfCutter.aspx*`):** The extension's only
+  function is to modify VAN's CreateAList and TurfCutter pages, which are
+  served from votebuilder.com subdomains that differ by committee. It runs on
+  no other sites.
+- **Remote code:** No, I am not using remote code.
+- **Data usage:** check none of the data types. The extension collects and
+  transmits no user data.
+- **Certifications:** check each certification the dashboard lists.
+- **Privacy policy URL:** `https://pacc2026.github.io/van-enhancement-suite/privacy.html`
+
+### Store listing
+
+Fill in a description, category (**Productivity**), language, and the 128px
+icon (`src/icons/icon128.png`), plus the screenshots and promo images the
+dashboard marks as required (screenshots are 1280×800).
+
+**Screenshots must not show real voter data.** Use a test committee, or blur
+names, addresses, and any voter details before uploading.
+
+### Moving force-installed staff to the store copy
+
+This migration is **unverified** (as of 2026-09-14) and must be tested on an
+org unit containing one test user before it is rolled out to everyone.
+
+Google's own ExtensionSettings policy documentation says the policy's update
+URL is used only for the extension's *initial* install; later updates come
+from the `update_url` in the installed extension's own manifest, and
+`override_update_url` does not apply once the source is the Chrome Web Store
+— see [chromeenterprise.google/policies/extension-settings](https://chromeenterprise.google/policies/extension-settings/).
+Switching the Admin console source alone therefore probably does **not** move
+already-installed copies to the store; it only changes where a *new* install
+comes from.
+
+What is likely required, once the store version is live:
+
+1. Ship one last self-hosted release whose manifest has **no `update_url`**
+   (keep `key`), published via `updates.xml` as usual. An installed extension
+   without `update_url` falls back to updating from the Chrome Web Store, and
+   because the signing key is unchanged the extension ID stays the same.
+2. Switch the Admin console source for `cdpjodhdenpjghbajpdlbbhpmdbcpcjh` from
+   **From a custom URL** to **Chrome Web Store**, keeping **Force install**,
+   so new installs come from the store.
+3. On the test user's `chrome://extensions`, verify the next store-only
+   version arrives before rolling this out to everyone else.
+
+Do not retire `updates.xml` or the `.crx` releases until managed copies are
+confirmed updating from the store — retiring them early would strand staff on
+that last self-hosted version.
+
+Producing a no-`update_url` `.crx` isn't automated yet: `tools/build-crx.sh`
+ships `manifest.json` as-is, `key` and `update_url` included. That will be a
+small change to the script, made when this migration actually happens.
+
+### Installing as a volunteer
+
+Join the Google Group with the Google account you use in Chrome, then open
+https://chromewebstore.google.com/detail/cdpjodhdenpjghbajpdlbbhpmdbcpcjh
+(available once the listing is approved) and click **Add to Chrome**.
 
 ## Firefox
 
@@ -173,3 +301,7 @@ replacement key produces a different extension ID and a fresh force-install.
 
 Keep it in the team password manager, and make sure more than one person can
 reach it.
+
+The first Chrome Web Store upload gives Google a copy of this key (that's how
+the store keeps the extension ID). It still controls the self-hosted channel,
+so its custody rules above don't change.
