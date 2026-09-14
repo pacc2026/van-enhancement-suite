@@ -1,13 +1,17 @@
 {
   "manifest_version": 3,
   "name": "VAN Enhancement Suite",
-  "version": "0.3.1",
+  "version": "0.3.4",
   "description": "Checkbox Targets picker, GOTV Turf Cutting mode, and precinct-based prefill for VAN's list building and turf cutting pages.",
   "icons": {
     "16": "src/icons/icon16.png",
     "32": "src/icons/icon32.png",
     "48": "src/icons/icon48.png",
     "128": "src/icons/icon128.png"
+  },
+  "action": {
+    "default_title": "VAN Enhancement Suite",
+    "default_popup": "src/popup/popup.html"
   },
   "update_url": "https://pacc2026.github.io/van-enhancement-suite/updates.xml",
   "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAmmdzP/xsvm63KpgjrQe3p0PHigrJZ56j+Lqfh0/n78pPSUKzCvTrEIKGz3S+f2b/ZliQ1Zd7TvOsTHIIuzf/kbH2Zw1jPY2TTzoi1+3BOGzez6IL2JnprhhSl2L6dU1AOGRihA0AQQH6vwCkIh6Z+imqSqGiniWeU/Tf5sLLFGhZ/zcDKxYhhaMgL5p54H66hfHMe034VCG3xxLwPwlpfO8r3DKtsFB5UVTLQRCRAOqrNLBH5tgtMhbu+fgGJ4kBFk6HdPI2fKG4hdAKUJ7iMACHEJKtsCFYu7aAw0vaV0prDAeETsA8ZOV+6anFpt1OH8iaj++JDbPxmho8vavPCwIDAQAB",

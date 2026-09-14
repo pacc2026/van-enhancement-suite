@@ -26,8 +26,11 @@ VERSION=$(sed -n 's/.*"version"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' mani
 [ -n "$VERSION" ] || { echo "Could not read version from manifest.json" >&2; exit 1; }
 
 # --- stage only what ships -------------------------------------------------
+# Clean only this script's own outputs: build/ also holds the Firefox .xpi
+# from tools/build-xpi.sh, and the two builds can run in either order.
 STAGE=build/van-enhancement-suite
-rm -rf build
+CRX="build/van-enhancement-suite-${VERSION}.crx"
+rm -rf "$STAGE" build/van-enhancement-suite.crx "$CRX"
 mkdir -p "$STAGE"
 cp manifest.json "$STAGE/"
 cp -R src "$STAGE/"
@@ -41,7 +44,6 @@ find "$STAGE" -name '.DS_Store' -delete
 
 [ -f "build/van-enhancement-suite.crx" ] || { echo "Packing failed: no .crx produced" >&2; exit 1; }
 
-CRX="build/van-enhancement-suite-${VERSION}.crx"
 mv build/van-enhancement-suite.crx "$CRX"
 rm -rf "$STAGE"
 

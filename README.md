@@ -7,7 +7,7 @@ parts:
   dropdown becomes a flat, grouped checkbox list, and the Any/All Match Type
   select becomes radio buttons.
 - **GOTV Turf Cutting mode** (`CreateAList.aspx`) — a switch that strips the
-  form down to County, the Dry Run Universe > Doors target, and the
+  form down to County, the Final Four > Doors target, and the
   suppressions, with everything preset and locked.
 - **Save My Map Region prefill** (`TurfCutter.aspx`) — fills the region name
   and folder from the precinct chosen upstream, so each turf is named to the
@@ -20,9 +20,20 @@ parts:
 
 ## Install
 
-Staff do not install this by hand. It is self-hosted and force-installed on
-managed browsers through enterprise policy — see
+**Chrome:** staff do not install this by hand. It is self-hosted and
+force-installed on managed browsers through enterprise policy — see
 [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) for the rollout and release steps.
+
+**Firefox (140 or newer):**
+
+1. Open the `van-enhancement-suite-<version>.xpi` asset on the
+   [latest release](https://github.com/pacc2026/van-enhancement-suite/releases/latest)
+   in Firefox.
+2. Click **Add** when Firefox asks to add VAN Enhancement Suite. It asks for
+   access to your data on votebuilder.com — that is how it changes VAN's pages.
+3. Reload any open VAN page.
+
+Firefox checks for updates on its own; there is nothing to reinstall.
 
 To run it locally while developing:
 
@@ -30,6 +41,11 @@ To run it locally while developing:
 2. Turn on **Developer mode** (top right).
 3. Click **Load unpacked** and select this directory.
 4. Reload `CreateAList.aspx`.
+
+To run it locally in Firefox, run `tools/build-xpi.sh --unsigned`, then in
+`about:debugging` → **This Firefox** → **Load Temporary Add-on**, select
+`build/firefox/manifest.json`. Temporary add-ons are removed when Firefox
+quits.
 
 ## How it works
 
@@ -74,9 +90,15 @@ cutting needs:
   fire on a county change and the row list is unchanged through both.) The
   content script re-runs on that load anyway; the MutationObserver covers
   later client-side changes.
-- Targets shows only Dry Run Universe > Doors, checked and locked. The target
-  is resolved **by title**, not by node key, since keys like `Target35|1`
-  differ between committees.
+- Targets shows only Final Four > Doors, checked and locked. The target is
+  resolved **by title prefix**, not by node key, since keys like `Target35|1`
+  differ between committees: a group starting with `Final Four` holding a
+  target starting with `Doors`, so a final name like "Final Four Universe" or
+  "Doors Universe" still matches. Matching is case-sensitive, and the first
+  match wins.
+- If no matching target exists in VAN yet, the mode leaves Targets unlocked
+  and shows a notice asking the user to choose targets, rather than locking
+  an empty list.
 - All five suppressions checked, `Include Deceased` and `Include Do Not Email`
   set, and the "Remove All Suppressions" link hidden.
 
@@ -119,15 +141,16 @@ and no `.select2-chosen`. The chosen values render as `.select2-search-choice`
 chips over a hidden input holding ids rather than names, so `readRowValue()`
 reads the chips. It never falls back to `input[type="text"]` — on these rows
 that matches Select2's own search box, which is always empty. Precinct chips
-read as `Philadelphia 02-01`, matching `van_precinct_nam` exactly. More than
+read as `Philadelphia 02-01`, matching `van_precinct_name` exactly. More than
 one chip means the selection is ambiguous, and nothing is stashed.
 
 When the modal opens, the pair is looked up in the bundled table and the fields
 are filled:
 
-- **Region Name** = `list_name` + `MMDD`. The exported `list_name` values
-  already end with `_`, which is the separator the date slots into:
-  `DR01_Philadelphia_02-01_` + `0910` → `DR01_Philadelphia_02-01_0910`.
+- **Region Name** = `list_name` + `_` + `MMDD`:
+  `GOTV_Philadelphia_02-01` → `GOTV_Philadelphia_02-01_0910`. Trailing
+  underscores on `list_name` are stripped first, so there is never a double
+  separator.
 - **Folder** = the `folder` column, matched against the dropdown by text.
 
 If the precinct isn't in the table, or nothing is stashed, both fields are left
@@ -192,6 +215,9 @@ the prototype setter survived, and only the latter enables the Save button.
 | `src/targets-checkboxes.css` | Styling matched to VAN's existing checkbox lists |
 | `src/gotv-mode.js` | The GOTV Turf Cutting toggle and its presets |
 | `src/gotv-mode.css` | Toggle switch and locked/hidden styling |
+| `src/popup/popup.html` | Toolbar popup: icon, name, version, help link, ownership line |
+| `src/popup/popup.css` | Popup styling |
+| `src/popup/popup.js` | Fills in the popup's version and year |
 | `src/save-region.js` | Prefills the Save My Map Region modal on TurfCutter.aspx |
 | `src/precinct-map.js` | GENERATED precinct lookup table — do not edit |
 | `tools/build-precincts.js` | Builds precinct-map.js from precincts.csv |
@@ -200,7 +226,12 @@ the prototype setter survived, and only the latter enables the Save button.
 | `src/icons/` | GENERATED icon set — 16/32 px cropped, 48/128 px whole van |
 | `tools/build-icons.py` | Builds the icon set from icon-source.webp |
 | `tools/build-crx.sh` | Packs and signs the .crx, regenerates the update manifest |
+| `tools/build-xpi.sh` | Builds and Mozilla-signs the Firefox .xpi, regenerates updates.json |
+| `tools/firefox-manifest.js` | Generates the Firefox manifest from manifest.json at build time |
+| `tools/firefox-updates.js` | Writes the Firefox update manifest for a signed .xpi |
+| `tools/*.test.js` | Tests for the Firefox build tools and the popup script — `node --test 'tools/*.test.js'` |
 | `docs/updates.xml` | GENERATED update manifest Chrome polls for new versions |
+| `docs/updates.json` | GENERATED update manifest Firefox polls for new versions |
 | `docs/DEPLOYMENT.md` | Self-hosting, enterprise policy, and release process |
 
 ## Legal

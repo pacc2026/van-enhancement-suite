@@ -73,8 +73,9 @@
     return pad(d.getMonth() + 1) + pad(d.getDate());
   }
 
-  // list_name values already end with "_", which is the separator the date
-  // slots into: "DR01_Philadelphia_02-01_" + "0910".
+  // The date is joined with "_": "GOTV_Philadelphia_02-01" + "_0910". Any
+  // trailing underscores are stripped first, so a list_name exported with one
+  // does not produce a double separator.
   function regionName(listName) {
     return listName.replace(/_+$/, '') + '_' + today();
   }

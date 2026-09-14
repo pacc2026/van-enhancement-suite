@@ -1,8 +1,8 @@
 // "GOTV Turf Cutting" mode for CreateAList.aspx.
 //
 // Strips the search form down to the handful of inputs turf cutting actually
-// needs: County (plus Precinct once VAN loads it), the Dry Run Universe >
-// Doors target, and the suppressions block with everything switched on.
+// needs: County (plus Precinct once VAN loads it), the Final Four > Doors
+// target, and the suppressions block with everything switched on.
 //
 // Runs in the MAIN world alongside targets-checkboxes.js.
 //
@@ -26,14 +26,32 @@
   var PRECINCT_KEY = 'ves:selected-precinct';
   var STAMP_KEY = 'ves:selection-stamp';
 
-  var TARGET_GROUP = 'Dry Run Universe';
+  // Matched as title prefixes, not exact titles: the target isn't loaded into
+  // VAN yet, and its final wording may add "Universe" to either the group or
+  // the leaf. Case-sensitive; the first match in tree order wins.
+  var TARGET_GROUP = 'Final Four';
   var TARGET_LEAF = 'Doors';
+
+  // Shown in place of the usual "select and lock" behavior when the target
+  // above cannot be found (see the comment in applyTargets).
+  var MISSING_TARGET_TEXT =
+    'GOTV Turf Cutting Mode could not find the Final Four > Doors target in ' +
+    'VAN. Choose your targets below before running the search.';
+
+  // Value of the DataBaseModeID field on the MyVoters side. MyCampaign is '1'.
+  var MYVOTERS_MODE_ID = '0';
 
   // Rows in the districts section that stay visible and interactive.
   var UNLOCKED_ROW_LABELS = /^(county|precinct)$/i;
 
   var INCLUDE_DECEASED = '-1';  // "Include Deceased"
   var INCLUDE_NO_EMAIL = '-1';  // "Include Do Not Email"
+
+  var TOGGLE_LABEL = 'GOTV Turf Cutting Mode';
+  var HELP_TEXT =
+    'GOTV Turf Cutting Mode auto-selects the appropriate target, removes ' +
+    'suppressions, and saves your turf with the right name into the correct ' +
+    'folder. All you have to do is select the precinct and cut the turf.';
 
   var HIDDEN_CLASS = 'ves-gotv-hidden';
   var LOCKED_CLASS = 'ves-locked';
@@ -65,6 +83,35 @@
     } catch (e) {
       log('Could not persist the toggle; it will reset on reload.');
     }
+  }
+
+  // Turf cutting is a MyVoters activity: the districts rows the mode depends on
+  // do not exist on MyCampaign. Both sides serve CreateAList.aspx at the same
+  // URL, so the manifest cannot separate them and the side has to be read off
+  // the page.
+  //
+  // DataBaseModeID is the authoritative signal. The database tab strip is the
+  // fallback for the case where that field is absent; VAN renders the strip
+  // more than once, so this matches whichever copy of the active tab comes
+  // first and reads its own link text. The Grey-body / Tan-body class on
+  // <body> tracks the side too, but it is theming and a reskin would silently
+  // flip the behavior, so it is deliberately not used.
+  //
+  // Fails open: with neither signal resolvable we assume MyVoters and offer the
+  // mode. A stray toggle on MyCampaign is cosmetic; a missing toggle on
+  // MyVoters breaks the workflow this extension exists for.
+  function isMyVoters() {
+    var mode = document.querySelector('input[name="DataBaseModeID"]');
+    if (mode && mode.value) return mode.value === MYVOTERS_MODE_ID;
+
+    var tab = document.querySelector('li[id^="DbTab"].active');
+    if (tab) {
+      var link = tab.querySelector('a');
+      return /my\s*voters/i.test((link || tab).textContent || '');
+    }
+
+    log('Could not tell which database this is; offering GOTV mode anyway.');
+    return true;
   }
 
   function getTree() {
@@ -115,13 +162,17 @@
     return null;
   }
 
+  function startsWith(title, prefix) {
+    return typeof title === 'string' && title.indexOf(prefix) === 0;
+  }
+
   function findTargetNode(tree) {
     var found = null;
     tree.visit(function (node) {
       if (found) return false;
-      if (node.title === TARGET_LEAF) {
+      if (startsWith(node.title, TARGET_LEAF)) {
         var parent = node.getParent();
-        if (parent && parent.title === TARGET_GROUP) {
+        if (parent && startsWith(parent.title, TARGET_GROUP)) {
           found = node;
           return false;
         }
@@ -327,11 +378,53 @@
     districtObserver.observe(panel, { childList: true, subtree: true });
   }
 
+  // Tells the user the auto-selection did not happen. Placed right above
+  // whichever Targets UI is on the page, so it reads as attached to that list
+  // rather than as a generic page banner.
+  function insertMissingTargetNotice() {
+    var notice = document.createElement('div');
+    notice.className = 'ves-gotv-notice';
+    notice.setAttribute('role', 'status');
+    notice.textContent = MISSING_TARGET_TEXT;
+
+    var list = document.querySelector('.ves-targets');
+    if (list && list.parentNode) {
+      list.parentNode.insertBefore(notice, list);
+      return;
+    }
+
+    var native = document.getElementById('TargetsSubGroups_treeview-container');
+    var nativeRow = native && native.closest('tr');
+    if (nativeRow && nativeRow.parentNode) {
+      nativeRow.parentNode.insertBefore(notice, nativeRow);
+      return;
+    }
+
+    var panel = document.getElementById('PanelSectionTargets');
+    if (panel) {
+      panel.insertBefore(notice, panel.firstChild);
+      return;
+    }
+
+    log('Could not find a place to show the missing-target notice.');
+  }
+
   function applyTargets(tree) {
     var node = findTargetNode(tree);
     if (!node) {
-      log('Could not find the "' + TARGET_GROUP + ' > ' + TARGET_LEAF + '" target.');
-    } else if (!node.isSelected()) {
+      log('Could not find a "' + TARGET_GROUP + '* > ' + TARGET_LEAF + '*" target.');
+
+      // Fail open: the target is not in VAN yet, so there is nothing to
+      // select. Hiding every other group and disabling the checkboxes (the
+      // normal behavior below) would leave a locked, empty Targets area,
+      // which lets a turf cut run with no target filter at all and no way to
+      // fix it short of turning the mode off. Leave Targets exactly as VAN
+      // rendered it and tell the user to pick by hand instead.
+      insertMissingTargetNotice();
+      return;
+    }
+
+    if (!node.isSelected()) {
       node.setSelected(true);
     }
 
@@ -359,7 +452,7 @@
     // Show only the group block containing our target; lock what remains.
     var blocks = list.querySelectorAll('.ves-group');
     [].forEach.call(blocks, function (block) {
-      var mine = node && block.querySelector('[data-ves-key="' + node.key + '"]');
+      var mine = block.querySelector('[data-ves-key="' + node.key + '"]');
       if (mine) {
         block.classList.remove(HIDDEN_CLASS);
       } else {
@@ -456,6 +549,11 @@
     [].forEach.call(document.querySelectorAll('.' + LOCKED_CLASS), function (el) {
       el.classList.remove(LOCKED_CLASS);
     });
+    // apply() always calls clear() first, so any notice left over from a
+    // previous apply() has to go here or it would pile up duplicates.
+    [].forEach.call(document.querySelectorAll('.ves-gotv-notice'), function (el) {
+      if (el.parentNode) el.parentNode.removeChild(el);
+    });
     var list = document.querySelector('.ves-targets');
     if (list) {
       [].forEach.call(list.querySelectorAll('input[type="checkbox"]'), function (box) {
@@ -485,7 +583,7 @@
 
     var text = document.createElement('span');
     text.className = 'ves-gotv-text';
-    text.textContent = 'GOTV Turf Cutting';
+    text.textContent = TOGGLE_LABEL;
 
     input.addEventListener('change', function () {
       setEnabled(input.checked);
@@ -496,7 +594,53 @@
     label.appendChild(track);
     label.appendChild(text);
     bar.appendChild(label);
+    bar.appendChild(buildHelp());
     return bar;
+  }
+
+  // The help button sits beside the label rather than inside it: anything
+  // inside the <label> would flip the checkbox when clicked.
+  function buildHelp() {
+    var wrap = document.createElement('span');
+    wrap.className = 'ves-gotv-help';
+
+    var button = document.createElement('button');
+    button.type = 'button';  // the page is a form; the default would submit it
+    button.className = 'ves-gotv-help-button';
+    button.textContent = '?';
+    button.setAttribute('aria-label', TOGGLE_LABEL + ' help');
+    button.setAttribute('aria-expanded', 'false');
+
+    var pop = document.createElement('span');
+    pop.className = 'ves-gotv-popover';
+    pop.setAttribute('role', 'tooltip');
+    pop.hidden = true;
+    pop.textContent = HELP_TEXT;
+
+    function setOpen(open) {
+      pop.hidden = !open;
+      button.setAttribute('aria-expanded', open ? 'true' : 'false');
+    }
+
+    button.addEventListener('click', function (e) {
+      e.preventDefault();
+      setOpen(pop.hidden);
+    });
+
+    // Dismiss on a click anywhere else, and on Escape.
+    document.addEventListener('click', function (e) {
+      if (!pop.hidden && !wrap.contains(e.target)) setOpen(false);
+    });
+    document.addEventListener('keydown', function (e) {
+      if (!pop.hidden && (e.key === 'Escape' || e.keyCode === 27)) {
+        setOpen(false);
+        button.focus();
+      }
+    });
+
+    wrap.appendChild(button);
+    wrap.appendChild(pop);
+    return wrap;
   }
 
   // The heading row holding "Create A New Search" — an h5.page-title wrapping
@@ -536,6 +680,13 @@
   }
 
   function start() {
+    // Gating here rather than in mountToggle covers the partial-postback
+    // re-entry from hookPartialPostbacks with the same single check.
+    if (!isMyVoters()) {
+      log('Not the MyVoters database; GOTV mode not offered.');
+      return;
+    }
+
     // Let targets-checkboxes.js render first so we can filter its list.
     setTimeout(function () {
       try {
