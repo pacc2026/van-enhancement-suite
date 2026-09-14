@@ -24,7 +24,8 @@ parts:
 policy. Anyone else with access — members of the extension's Google Group —
 installs it from the private
 [Chrome Web Store listing](https://chromewebstore.google.com/detail/cdpjodhdenpjghbajpdlbbhpmdbcpcjh)
-while signed in to Chrome with that Google account. See
+(available once the listing is approved) while signed in to Chrome with that
+Google account. See
 [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) for rollout and release steps.
 
 **Firefox (140 or newer):**

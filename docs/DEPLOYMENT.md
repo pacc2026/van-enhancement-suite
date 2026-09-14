@@ -10,7 +10,7 @@ Mozilla-signed add-on from a link — see [Firefox](#firefox).
 |---|---|
 | Chrome extension ID | `cdpjodhdenpjghbajpdlbbhpmdbcpcjh` |
 | Chrome update manifest | `https://pacc2026.github.io/van-enhancement-suite/updates.xml` |
-| Chrome Web Store (private) | `https://chromewebstore.google.com/detail/cdpjodhdenpjghbajpdlbbhpmdbcpcjh` |
+| Chrome Web Store (private) | `https://chromewebstore.google.com/detail/cdpjodhdenpjghbajpdlbbhpmdbcpcjh` (available once the listing is approved) |
 | Privacy policy | `https://pacc2026.github.io/van-enhancement-suite/privacy.html` |
 | Firefox add-on ID | `van-enhancement-suite@pacc2026.github.io` |
 | Firefox update manifest | `https://pacc2026.github.io/van-enhancement-suite/updates.json` |
@@ -89,7 +89,9 @@ upload.
 
 1. Bump `"version"` in `manifest.json`. Neither browser downgrades, and
    addons.mozilla.org never accepts the same version twice — even one whose
-   signing failed.
+   signing failed. The Chrome Web Store has the same rule: each upload must
+   carry a higher version than the last one uploaded, including one that was
+   rejected or is still pending review.
 2. Regenerate the precinct map if `precincts.csv` changed:
    `node tools/build-precincts.js`
 3. Pack and sign for Chrome, passing the signing key:
@@ -115,12 +117,16 @@ upload.
 8. In the [Chrome Web Store developer dashboard](https://chrome.google.com/webstore/devconsole),
    open the item → **Package** → **Upload new package**, upload
    `build/van-enhancement-suite-<version>-cws.zip`, and **Submit for review**.
-   Store users get the version once review passes, usually within a few days;
-   it does not depend on steps 6–7.
+   Store users get the version once review passes — review can take several
+   days; it does not depend on steps 6–7.
 
 Do steps 6 and 7 in that order. If a manifest advertises a version whose file
 is not uploaded yet, every copy in that browser gets a download error until it
 is.
+
+The three channels share one version number but can briefly sit on different
+versions of it, since store review is not instant. That's harmless: neither
+Chrome nor Firefox ever downgrades a user.
 
 ### When Mozilla is slow
 
@@ -134,10 +140,17 @@ Mozilla picks the version for manual review. Chrome does not have to wait:
 
 ## Chrome Web Store
 
+The dashboard's exact labels, its visibility options (including whether
+"everyone in the domain" and trusted testers/groups can be combined), how a
+group gets added, and the number of certification checkboxes are unverified
+as of 2026-09-14 — confirm them during the first upload and correct this
+section as needed.
+
 The store listing is **private**: only members of the extension's Google Group
-can see or install it. It is reviewed like any public item, so each upload
-takes a few days to go live. It keeps the self-hosted extension ID, so it is
-the same extension whether it arrived by policy or from the store.
+can see or install it. Private items go through the same review as public
+ones, and review can take several days. It keeps the self-hosted extension
+ID, so it is the same extension whether it arrived by policy or from the
+store.
 
 ### Before the first upload (Workspace admin)
 
@@ -145,8 +158,9 @@ the same extension whether it arrived by policy or from the store.
   the domain.
 - Create the Google Group that should have access (nest an all-staff group
   inside it if you like), and allow members from outside the organization if
-  volunteers use personal Google accounts. The group must be owned or managed
-  by the developer account.
+  volunteers use personal Google accounts. The group is added as a trusted
+  tester group in the developer account's settings; confirm in the dashboard
+  who is allowed to add it.
 
 ### First upload — keeps the extension ID
 
@@ -184,7 +198,7 @@ what confirms it worked.
 - **Remote code:** No, I am not using remote code.
 - **Data usage:** check none of the data types. The extension collects and
   transmits no user data.
-- **Certifications:** check all three.
+- **Certifications:** check each certification the dashboard lists.
 - **Privacy policy URL:** `https://pacc2026.github.io/van-enhancement-suite/privacy.html`
 
 ### Store listing
@@ -233,8 +247,8 @@ small change to the script, made when this migration actually happens.
 ### Installing as a volunteer
 
 Join the Google Group with the Google account you use in Chrome, then open
-https://chromewebstore.google.com/detail/cdpjodhdenpjghbajpdlbbhpmdbcpcjh and
-click **Add to Chrome**.
+https://chromewebstore.google.com/detail/cdpjodhdenpjghbajpdlbbhpmdbcpcjh
+(available once the listing is approved) and click **Add to Chrome**.
 
 ## Firefox
 
@@ -287,3 +301,7 @@ replacement key produces a different extension ID and a fresh force-install.
 
 Keep it in the team password manager, and make sure more than one person can
 reach it.
+
+The first Chrome Web Store upload gives Google a copy of this key (that's how
+the store keeps the extension ID). It still controls the self-hosted channel,
+so its custody rules above don't change.
