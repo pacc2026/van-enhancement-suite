@@ -91,8 +91,17 @@ upload, then publish both manifests.
    `node tools/build-precincts.js`
 3. Pack and sign for Chrome, passing the signing key:
    `tools/build-crx.sh /path/to/van-enhancement-suite.pem`
-4. Pack and sign for Firefox, with AMO credentials in the environment:
-   `WEB_EXT_API_KEY=... WEB_EXT_API_SECRET=... tools/build-xpi.sh`
+4. Pack and sign for Firefox, with AMO credentials read into the environment
+   without echoing them or saving them to shell history:
+
+   ```bash
+   read -rs WEB_EXT_API_KEY && read -rs WEB_EXT_API_SECRET
+   export WEB_EXT_API_KEY WEB_EXT_API_SECRET
+   tools/build-xpi.sh
+   ```
+
+   Paste the key, press Enter, paste the secret, press Enter — nothing is
+   shown.
 5. Attach both to a matching tag:
    `gh release create v<version> build/van-enhancement-suite-<version>.crx build/van-enhancement-suite-<version>.xpi --title v<version> --notes "..."`
 6. Commit the regenerated `docs/updates.xml` and `docs/updates.json`. **This is
@@ -147,7 +156,9 @@ to Chrome: whoever holds them can push code to every installed Firefox copy.
   one person. Generate them at
   https://addons.mozilla.org/developers/addon/api/key/.
 - Pass them to `tools/build-xpi.sh` as `WEB_EXT_API_KEY` and
-  `WEB_EXT_API_SECRET` environment variables. Never commit them.
+  `WEB_EXT_API_SECRET` environment variables, read in with `read -rs` (see
+  "Ship a new version" above) rather than typed inline on the command line.
+  Never commit them.
 
 If Mozilla requests source code during a manual review, `src/precinct-map.js`
 is generated from `precincts.csv` by `tools/build-precincts.js`; both are in
