@@ -1,7 +1,16 @@
 # Firefox Port — Design
 
 **Date:** 2026-09-14
-**Status:** Approved in brainstorming; awaiting spec review
+**Status:** Approved; amended 2026-09-14 (see Amendment)
+
+## Amendment (2026-09-14, during planning)
+
+Since November 3, 2025, AMO requires every new add-on, including unlisted ones,
+to declare `browser_specific_settings.gecko.data_collection_permissions`.
+Firefox supports it from version 140. The Firefox manifest therefore also sets
+`"data_collection_permissions": { "required": ["none"] }`, and
+`strict_min_version` is raised from `128.0` to `140.0`. References to Firefox
+128 below are superseded by 140.
 
 ## Goal
 
