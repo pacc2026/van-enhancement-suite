@@ -91,3 +91,63 @@
   outline: 2px solid #1a5fb4;
   outline-offset: 2px;
 }
+
+/* Help "?" button and its pop-over. The wrapper is the positioning context,
+   and sits outside the <label> so clicking it does not flip the toggle. */
+.ves-gotv-help {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  margin-left: 8px;
+}
+
+.ves-gotv-help-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  padding: 0;
+  background: #b6bfc8;
+  color: #fff;
+  border: 0;
+  border-radius: 50%;
+  font: bold 11px/1 sans-serif;
+  cursor: pointer;
+}
+
+.ves-gotv-help-button:hover,
+.ves-gotv-help-button[aria-expanded="true"] {
+  background: #6b7784;
+}
+
+.ves-gotv-help-button:focus-visible {
+  outline: 2px solid #1a5fb4;
+  outline-offset: 2px;
+}
+
+.ves-gotv-popover {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 50%;
+  z-index: 1000;
+  display: block;
+  width: 280px;
+  margin-left: -140px;
+  padding: 10px 12px;
+  background: #fff;
+  color: #2b3239;
+  border: 1px solid #d6dbe0;
+  border-radius: 4px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18);
+  font: normal 12px/1.45 sans-serif;
+  letter-spacing: normal;
+  text-align: left;
+  text-transform: none;
+  white-space: normal;
+}
+
+/* display:block above would otherwise defeat the `hidden` attribute. */
+.ves-gotv-popover[hidden] {
+  display: none;
+}

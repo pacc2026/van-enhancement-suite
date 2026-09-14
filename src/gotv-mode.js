@@ -29,11 +29,20 @@
   var TARGET_GROUP = 'Dry Run Universe';
   var TARGET_LEAF = 'Doors';
 
+  // Value of the DataBaseModeID field on the MyVoters side. MyCampaign is '1'.
+  var MYVOTERS_MODE_ID = '0';
+
   // Rows in the districts section that stay visible and interactive.
   var UNLOCKED_ROW_LABELS = /^(county|precinct)$/i;
 
   var INCLUDE_DECEASED = '-1';  // "Include Deceased"
   var INCLUDE_NO_EMAIL = '-1';  // "Include Do Not Email"
+
+  var TOGGLE_LABEL = 'GOTV Turf Cutting Mode';
+  var HELP_TEXT =
+    'GOTV Turf Cutting Mode auto-selects the appropriate target, removes ' +
+    'suppressions, and saves your turf with the right name into the correct ' +
+    'folder. All you have to do is select the precinct and cut the turf.';
 
   var HIDDEN_CLASS = 'ves-gotv-hidden';
   var LOCKED_CLASS = 'ves-locked';
@@ -65,6 +74,35 @@
     } catch (e) {
       log('Could not persist the toggle; it will reset on reload.');
     }
+  }
+
+  // Turf cutting is a MyVoters activity: the districts rows the mode depends on
+  // do not exist on MyCampaign. Both sides serve CreateAList.aspx at the same
+  // URL, so the manifest cannot separate them and the side has to be read off
+  // the page.
+  //
+  // DataBaseModeID is the authoritative signal. The database tab strip is the
+  // fallback for the case where that field is absent; VAN renders the strip
+  // more than once, so this matches whichever copy of the active tab comes
+  // first and reads its own link text. The Grey-body / Tan-body class on
+  // <body> tracks the side too, but it is theming and a reskin would silently
+  // flip the behavior, so it is deliberately not used.
+  //
+  // Fails open: with neither signal resolvable we assume MyVoters and offer the
+  // mode. A stray toggle on MyCampaign is cosmetic; a missing toggle on
+  // MyVoters breaks the workflow this extension exists for.
+  function isMyVoters() {
+    var mode = document.querySelector('input[name="DataBaseModeID"]');
+    if (mode && mode.value) return mode.value === MYVOTERS_MODE_ID;
+
+    var tab = document.querySelector('li[id^="DbTab"].active');
+    if (tab) {
+      var link = tab.querySelector('a');
+      return /my\s*voters/i.test((link || tab).textContent || '');
+    }
+
+    log('Could not tell which database this is; offering GOTV mode anyway.');
+    return true;
   }
 
   function getTree() {
@@ -485,7 +523,7 @@
 
     var text = document.createElement('span');
     text.className = 'ves-gotv-text';
-    text.textContent = 'GOTV Turf Cutting';
+    text.textContent = TOGGLE_LABEL;
 
     input.addEventListener('change', function () {
       setEnabled(input.checked);
@@ -496,7 +534,53 @@
     label.appendChild(track);
     label.appendChild(text);
     bar.appendChild(label);
+    bar.appendChild(buildHelp());
     return bar;
+  }
+
+  // The help button sits beside the label rather than inside it: anything
+  // inside the <label> would flip the checkbox when clicked.
+  function buildHelp() {
+    var wrap = document.createElement('span');
+    wrap.className = 'ves-gotv-help';
+
+    var button = document.createElement('button');
+    button.type = 'button';  // the page is a form; the default would submit it
+    button.className = 'ves-gotv-help-button';
+    button.textContent = '?';
+    button.setAttribute('aria-label', TOGGLE_LABEL + ' help');
+    button.setAttribute('aria-expanded', 'false');
+
+    var pop = document.createElement('span');
+    pop.className = 'ves-gotv-popover';
+    pop.setAttribute('role', 'tooltip');
+    pop.hidden = true;
+    pop.textContent = HELP_TEXT;
+
+    function setOpen(open) {
+      pop.hidden = !open;
+      button.setAttribute('aria-expanded', open ? 'true' : 'false');
+    }
+
+    button.addEventListener('click', function (e) {
+      e.preventDefault();
+      setOpen(pop.hidden);
+    });
+
+    // Dismiss on a click anywhere else, and on Escape.
+    document.addEventListener('click', function (e) {
+      if (!pop.hidden && !wrap.contains(e.target)) setOpen(false);
+    });
+    document.addEventListener('keydown', function (e) {
+      if (!pop.hidden && (e.key === 'Escape' || e.keyCode === 27)) {
+        setOpen(false);
+        button.focus();
+      }
+    });
+
+    wrap.appendChild(button);
+    wrap.appendChild(pop);
+    return wrap;
   }
 
   // The heading row holding "Create A New Search" — an h5.page-title wrapping
@@ -536,6 +620,13 @@
   }
 
   function start() {
+    // Gating here rather than in mountToggle covers the partial-postback
+    // re-entry from hookPartialPostbacks with the same single check.
+    if (!isMyVoters()) {
+      log('Not the MyVoters database; GOTV mode not offered.');
+      return;
+    }
+
     // Let targets-checkboxes.js render first so we can filter its list.
     setTimeout(function () {
       try {
