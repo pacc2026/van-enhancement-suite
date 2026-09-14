@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "VAN Enhancement Suite",
-  "version": "0.3.1",
+  "version": "0.3.2",
   "description": "Checkbox Targets picker, GOTV Turf Cutting mode, and precinct-based prefill for VAN's list building and turf cutting pages.",
   "icons": {
     "16": "src/icons/icon16.png",
