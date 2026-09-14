@@ -176,10 +176,11 @@ what confirms it worked.
 - **Single purpose:** Speeds up VAN's list-building and turf-cutting pages for
   campaign staff by simplifying target selection and prefilling turf-cutting
   forms.
-- **Host permission justification (`https://*.votebuilder.com/*`):** The
-  extension's only function is to modify VAN's CreateAList and TurfCutter
-  pages, which are served from votebuilder.com subdomains that differ by
-  committee. It runs on no other sites.
+- **Host permission justification (`https://*.votebuilder.com/CreateAList.aspx*`,
+  `https://*.votebuilder.com/TurfCutter.aspx*`):** The extension's only
+  function is to modify VAN's CreateAList and TurfCutter pages, which are
+  served from votebuilder.com subdomains that differ by committee. It runs on
+  no other sites.
 - **Remote code:** No, I am not using remote code.
 - **Data usage:** check none of the data types. The extension collects and
   transmits no user data.
