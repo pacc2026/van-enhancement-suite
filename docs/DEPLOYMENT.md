@@ -1,15 +1,17 @@
 # Deploying VAN Enhancement Suite
 
-This extension is **self-hosted** — it is in neither the Chrome Web Store nor
-the public Firefox add-ons site. Chrome permits self-hosted extensions only in
-managed environments, so Chrome users get it through enterprise policy.
-Firefox installs any Mozilla-signed add-on, so Firefox users install it from a
-link — see [Firefox](#firefox).
+This extension reaches users three ways. Managed Chrome profiles get it
+through enterprise policy, from a self-hosted update URL. Anyone in the
+extension's Google Group can install it from a **private** Chrome Web Store
+listing — see [Chrome Web Store](#chrome-web-store). Firefox users install a
+Mozilla-signed add-on from a link — see [Firefox](#firefox).
 
 | | |
 |---|---|
 | Chrome extension ID | `cdpjodhdenpjghbajpdlbbhpmdbcpcjh` |
 | Chrome update manifest | `https://pacc2026.github.io/van-enhancement-suite/updates.xml` |
+| Chrome Web Store (private) | `https://chromewebstore.google.com/detail/cdpjodhdenpjghbajpdlbbhpmdbcpcjh` |
+| Privacy policy | `https://pacc2026.github.io/van-enhancement-suite/privacy.html` |
 | Firefox add-on ID | `van-enhancement-suite@pacc2026.github.io` |
 | Firefox update manifest | `https://pacc2026.github.io/van-enhancement-suite/updates.json` |
 | Downloads (.crx and .xpi) | [GitHub releases](https://github.com/pacc2026/van-enhancement-suite/releases) |
@@ -81,8 +83,9 @@ still takes precedence — no separate allowlist entry is needed.
 ## Ship a new version
 
 Both browsers poll their update manifest and install the linked file when its
-`version` is higher than the installed one. A release is: bump, build both,
-upload, then publish both manifests.
+`version` is higher than the installed one. A release is: bump, build
+everything, upload, then publish both update manifests and submit the store
+upload.
 
 1. Bump `"version"` in `manifest.json`. Neither browser downgrades, and
    addons.mozilla.org never accepts the same version twice — even one whose
@@ -91,7 +94,9 @@ upload, then publish both manifests.
    `node tools/build-precincts.js`
 3. Pack and sign for Chrome, passing the signing key:
    `tools/build-crx.sh /path/to/van-enhancement-suite.pem`
-4. Pack and sign for Firefox, with AMO credentials read into the environment
+4. Build the Chrome Web Store zip (no key):
+   `tools/build-cws-zip.sh`
+5. Pack and sign for Firefox, with AMO credentials read into the environment
    without echoing them or saving them to shell history:
 
    ```bash
@@ -102,13 +107,18 @@ upload, then publish both manifests.
 
    Paste the key, press Enter, paste the secret, press Enter — nothing is
    shown.
-5. Attach both to a matching tag:
+6. Attach both to a matching tag (the `.crx` and `.xpi` only — never a zip):
    `gh release create v<version> build/van-enhancement-suite-<version>.crx build/van-enhancement-suite-<version>.xpi --title v<version> --notes "..."`
-6. Commit the regenerated `docs/updates.xml` and `docs/updates.json`. **This is
+7. Commit the regenerated `docs/updates.xml` and `docs/updates.json`. **This is
    the step that actually ships** — until a manifest advertises the new
    version, nothing updates.
+8. In the [Chrome Web Store developer dashboard](https://chrome.google.com/webstore/devconsole),
+   open the item → **Package** → **Upload new package**, upload
+   `build/van-enhancement-suite-<version>-cws.zip`, and **Submit for review**.
+   Store users get the version once review passes, usually within a few days;
+   it does not depend on steps 6–7.
 
-Do steps 5 and 6 in that order. If a manifest advertises a version whose file
+Do steps 6 and 7 in that order. If a manifest advertises a version whose file
 is not uploaded yet, every copy in that browser gets a download error until it
 is.
 
@@ -121,6 +131,85 @@ Mozilla picks the version for manual review. Chrome does not have to wait:
 2. When signing finishes (`tools/build-xpi.sh` prints the recovery steps if it
    timed out), `gh release upload v<version> build/van-enhancement-suite-<version>.xpi`.
 3. Commit `docs/updates.json`.
+
+## Chrome Web Store
+
+The store listing is **private**: only members of the extension's Google Group
+can see or install it. It is reviewed like any public item, so each upload
+takes a few days to go live. It keeps the self-hosted extension ID, so it is
+the same extension whether it arrived by policy or from the store.
+
+### Before the first upload (Workspace admin)
+
+- In the Google Admin console, allow private Chrome Web Store publishing for
+  the domain.
+- Create the Google Group that should have access (nest an all-staff group
+  inside it if you like), and allow members from outside the organization if
+  volunteers use personal Google accounts. The group must be owned or managed
+  by the developer account.
+
+### First upload — keeps the extension ID
+
+1. Build a zip that includes the signing key (see [The signing key](#the-signing-key)):
+   `tools/build-cws-zip.sh --with-key /path/to/van-enhancement-suite.pem`
+2. In the [developer dashboard](https://chrome.google.com/webstore/devconsole),
+   click **New item** and upload
+   `build/van-enhancement-suite-<version>-cws-with-key.zip`.
+3. **Check the item ID** the dashboard shows. It must be
+   `cdpjodhdenpjghbajpdlbbhpmdbcpcjh`. If it is anything else, delete the
+   draft before submitting — publishing it would create a second, separate
+   extension.
+4. Delete the with-key zip: `rm build/van-enhancement-suite-*-cws-with-key.zip`.
+   Every later upload uses the plain zip.
+
+Keeping the ID by uploading `key.pem` is reported by Chromium extension
+developers but not described in Google's current documentation — step 3 is
+what confirms it worked.
+
+### Distribution
+
+**Distribution** tab → Visibility **Private** → share with the Google Group
+(add it under the account's trusted testers / groups settings).
+
+### Privacy practices (paste these)
+
+- **Single purpose:** Speeds up VAN's list-building and turf-cutting pages for
+  campaign staff by simplifying target selection and prefilling turf-cutting
+  forms.
+- **Host permission justification (`https://*.votebuilder.com/*`):** The
+  extension's only function is to modify VAN's CreateAList and TurfCutter
+  pages, which are served from votebuilder.com subdomains that differ by
+  committee. It runs on no other sites.
+- **Remote code:** No, I am not using remote code.
+- **Data usage:** check none of the data types. The extension collects and
+  transmits no user data.
+- **Certifications:** check all three.
+- **Privacy policy URL:** `https://pacc2026.github.io/van-enhancement-suite/privacy.html`
+
+### Store listing
+
+Fill in a description, category (**Productivity**), language, and the 128px
+icon (`src/icons/icon128.png`), plus the screenshots and promo images the
+dashboard marks as required (screenshots are 1280×800).
+
+**Screenshots must not show real voter data.** Use a test committee, or blur
+names, addresses, and any voter details before uploading.
+
+### Moving force-installed staff to the store copy
+
+Once the store version is live and its ID is confirmed: in the Google Admin
+console (**Devices → Chrome → Apps & extensions → Users & browsers**), select
+`cdpjodhdenpjghbajpdlbbhpmdbcpcjh` and change its source from **From a custom
+URL** to **Chrome Web Store**, keeping **Force install**. Because the ID is
+unchanged, installed copies switch update source without reinstalling. The
+self-hosted `updates.xml` and `.crx` releases stay until every org unit is
+switched; retire them in a separate change.
+
+### Installing as a volunteer
+
+Join the Google Group with the Google account you use in Chrome, then open
+https://chromewebstore.google.com/detail/cdpjodhdenpjghbajpdlbbhpmdbcpcjh and
+click **Add to Chrome**.
 
 ## Firefox
 
