@@ -14,19 +14,45 @@ The extension ID is derived from the signing key and is permanent. It changes
 only if the key is lost or replaced — at which point every installed copy
 becomes a different extension and has to be re-pushed.
 
-## Prerequisite: managed browsers
+## Prerequisite: Chrome policy has to reach the user
 
-Force-install only reaches browsers enrolled in **Chrome Enterprise Core**
-(formerly Chrome Browser Cloud Management) or managed by MDM. Signing in to a
-Workspace account is not by itself enough — the browser or profile must be
-enrolled for Chrome policy to apply. Verify on a test machine at
-`chrome://policy` before rolling out.
+Chrome allows self-hosted extensions only where enterprise policy applies.
+Two mechanisms deliver it, and either is enough:
+
+- **Managed Chrome profile** — the user signs in to *Chrome itself* with their
+  Workspace account, and `Users & browsers` policy follows them to any device.
+  This needs no enrollment token and is what we use.
+- **Chrome Enterprise Core** — the browser installation is enrolled, so policy
+  applies regardless of who signs in. Useful for shared machines.
+
+The trap: signing in to Gmail or Drive **in a tab is not signing in to
+Chrome**. Only a managed Chrome profile receives this policy. Verify on a test
+machine at `chrome://policy` before rolling out.
+
+### Network egress
+
+The CRX download redirects from `github.com` to
+`objects.githubusercontent.com`, so allowlisting only `github.com` yields a
+policy that applies and an extension that never installs. All three of
+`pacc2026.github.io`, `github.com` and `objects.githubusercontent.com` must be
+reachable from the user's network.
+
+### Allowed extension types
+
+If **Additional settings → Allowed types of apps and extensions** has been
+restricted, `Extension` must be among the permitted types or force-install
+fails without a useful error. An `ExtensionInstallBlocklist` of `*` is fine —
+a `force_installed` entry outranks it.
 
 ## Push it to users
 
 In the Google Admin console: **Devices → Chrome → Apps & extensions → Users &
 browsers**, select the target org unit, then **+ → Add Chrome app or extension
-by ID**.
+by ID**. Start with an org unit containing only yourself — users cannot remove
+a force-installed extension, so a mistake is awkward to walk back.
+
+Set the source dropdown to **From a custom URL**, not the Chrome Web Store.
+Left on the default it fails, because this ID is not in the store.
 
 - **Extension ID:** `cdpjodhdenpjghbajpdlbbhpmdbcpcjh`
 - **From a custom URL:** `https://pacc2026.github.io/van-enhancement-suite/updates.xml`
