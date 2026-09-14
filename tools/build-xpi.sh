@@ -41,9 +41,10 @@ SIGNED_DIR=build/firefox-signed
 XPI="build/van-enhancement-suite-${VERSION}.xpi"
 
 # --- stage only what ships -------------------------------------------------
-# Clean only this script's own outputs; build/ also holds the Chrome .crx and,
-# on --unsigned, a previously signed .xpi that AMO will never re-sign, so that
-# one is left alone here and removed only on the signing path below.
+# Clean only this script's own outputs; build/ also holds the Chrome .crx and
+# any already-signed .xpi files, which are left alone here. The signing path
+# below refuses to run at all if this version's .xpi already exists, rather
+# than overwriting it.
 rm -rf "$STAGE" "$SIGNED_DIR"
 mkdir -p "$STAGE"
 cp -R src "$STAGE/"
@@ -65,14 +66,24 @@ fi
 # --- sign ------------------------------------------------------------------
 # web-ext reads WEB_EXT_API_KEY / WEB_EXT_API_SECRET from the environment, so
 # the credentials never appear in the process list.
-rm -f "$XPI"
+#
+# Refuse before submitting anything: AMO never accepts the same version
+# twice, so a local .xpi for this version means it is already signed and
+# there is nothing useful this run could do.
+if [ -e "$XPI" ]; then
+  echo "$XPI already exists: version $VERSION is already signed, and AMO never accepts the same version twice. Bump \"version\" in manifest.json to build a new one." >&2
+  exit 1
+fi
 if ! npx --yes "$WEB_EXT" sign --source-dir "$STAGE" --artifacts-dir "$SIGNED_DIR" \
     --channel unlisted --timeout 900000 --no-input --no-config-discovery; then
   cat >&2 <<MSG
 
-Signing did not finish. If AMO accepted the upload, version $VERSION is still
-queued there — AMO never accepts the same version twice, so do not bump just to
-retry. Once it is approved, download the signed file from
+Signing did not finish. Read the web-ext output above: if it reports
+validation errors or bad credentials, fix those — the version was not
+accepted, so fixing the problem and rerunning is safe. If it timed out
+waiting for approval, version $VERSION is still queued there — AMO never
+accepts the same version twice, so do not bump just to retry. Once it is
+approved, download the signed file from
 https://addons.mozilla.org/developers/addons, save it as $XPI, then run:
 
   node tools/firefox-updates.js $VERSION $XPI docs/updates.json
