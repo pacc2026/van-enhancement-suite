@@ -26,6 +26,10 @@ case "${1:-}" in
   *) echo "Unknown argument: $1 (expected nothing or --with-key <key.pem>)" >&2; exit 1 ;;
 esac
 
+# The with-key zip and the staged key.pem contain the private signing key and
+# must not be readable by other users.
+[ -z "$KEY" ] || umask 077
+
 VERSION=$(sed -n 's/.*"version"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' manifest.json | head -1)
 [ -n "$VERSION" ] || { echo "Could not read version from manifest.json" >&2; exit 1; }
 
@@ -37,8 +41,17 @@ else
 fi
 
 # Never leave a copy of the private key in the staging directory, even if
-# zipping fails partway.
-trap 'rm -f "$STAGE/key.pem"' EXIT
+# zipping fails partway. If a with-key zip was being built and the script is
+# exiting non-zero, also remove the (possibly partial) zip rather than leave
+# an incomplete copy of the key on disk.
+cleanup() {
+  status=$?
+  rm -f "$STAGE/key.pem"
+  if [ -n "$KEY" ] && [ "$status" -ne 0 ]; then
+    rm -f "$ZIP"
+  fi
+}
+trap cleanup EXIT
 
 # --- stage only what ships -------------------------------------------------
 # Clean only this script's own outputs; build/ also holds the .crx, the .xpi,
