@@ -87,6 +87,13 @@ A switch at the top of the search form strips the page down to what turf
 cutting needs:
 
 - Every section hidden except Home Districts, Targets and Suppressions.
+- Those three do not have to be favorites. A section that is not a favorite
+  renders collapsed, and Home Districts and Targets are not in the page at all
+  until opened — each open button fires a partial postback that loads the
+  section. The switch is therefore mounted without waiting for the Targets
+  tree, and turning the mode on first opens any of the three that are closed,
+  one postback at a time (a second postback started mid-flight aborts the
+  first), then applies.
 - Home Districts shows County only, plus Precinct once it exists. Choosing a
   county makes VAN add county-specific district types — **Precinct, Ward and
   City Council** — but only after a **full page load**, not via the partial
