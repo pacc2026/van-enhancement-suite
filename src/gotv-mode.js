@@ -59,10 +59,26 @@
   var READY_TIMEOUT_MS = 10000;
   var POLL_INTERVAL_MS = 150;
 
+  // Sections the mode needs open, by the suffix VAN gives each one's ids
+  // (UpdatePanel<key>, Button<key>, PanelSection<key>). A section that is not
+  // a favorite renders collapsed, and Home Districts and Targets are not even
+  // in the page until opened: their open button fires a partial postback
+  // that loads them. The heading title is the fallback for finding a section.
+  var SECTIONS = [
+    { key: 'DistrictsNarrow', title: /^home districts$/i },
+    { key: 'Targets', title: /^targets$/i },
+    { key: 'Suppressions', title: /^suppressions$/i }
+  ];
+  var OPEN_TIMEOUT_MS = 15000;
+
   // Elements whose value the mode has set and must hold. Populated on apply,
   // consulted by the capture-phase guard below.
   var pinned = [];
   var districtObserver = null;
+
+  // True while the mode is opening sections itself, so the postbacks it
+  // causes do not each start another apply().
+  var opening = false;
 
   function log() {
     var args = ['[van-enhancement-suite:gotv]'].concat([].slice.call(arguments));
@@ -502,10 +518,116 @@
     });
   }
 
+  // --- opening collapsed sections -----------------------------------------
+
+  function pageRequestManager() {
+    var sys = window.Sys;
+    if (!sys || !sys.WebForms || !sys.WebForms.PageRequestManager) return null;
+    try {
+      return sys.WebForms.PageRequestManager.getInstance();
+    } catch (e) {
+      return null;
+    }
+  }
+
+  function inPostback() {
+    var prm = pageRequestManager();
+    return !!(prm && prm.get_isInAsyncPostBack());
+  }
+
+  function sectionWrapper(section) {
+    var byId = document.querySelector('input[id$="Button' + section.key + '"]');
+    if (byId) return byId.closest('.page-section.panel');
+    var titles = document.querySelectorAll('.PageSectionClickableTitle');
+    for (var i = 0; i < titles.length; i += 1) {
+      if (section.title.test(titles[i].textContent.trim())) {
+        return titles[i].closest('.page-section.panel');
+      }
+    }
+    return null;
+  }
+
+  // Open means the section body is in the page and not collapsed.
+  function isSectionOpen(wrapper) {
+    var bodies = wrapper.querySelectorAll('div[id^="PanelSection"]:not([id$="Validation"])');
+    for (var i = 0; i < bodies.length; i += 1) {
+      if (window.getComputedStyle(bodies[i]).display !== 'none') return true;
+    }
+    return false;
+  }
+
+  // Opens each needed section that is closed, one at a time: starting a
+  // second partial postback while one is in flight aborts the first. VAN's
+  // open button only ever opens (clicking it on an open section just reloads
+  // it), but it is still only clicked on a closed one. Fails open: a section
+  // that cannot be found or does not open in time is skipped and logged.
+  function openSections(done) {
+    var waited = 0;
+    opening = true;
+
+    function finish() {
+      opening = false;
+      done();
+    }
+
+    (function next() {
+      if (!isEnabled()) {
+        opening = false;
+        return; // switched off while we were waiting
+      }
+      if (inPostback()) {
+        waited += POLL_INTERVAL_MS;
+        if (waited >= OPEN_TIMEOUT_MS) return finish();
+        return setTimeout(next, POLL_INTERVAL_MS);
+      }
+
+      var closed = null;
+      for (var i = 0; i < SECTIONS.length && !closed; i += 1) {
+        var wrapper = sectionWrapper(SECTIONS[i]);
+        if (!wrapper) {
+          log('Could not find the ' + SECTIONS[i].key + ' section.');
+        } else if (!isSectionOpen(wrapper) && !SECTIONS[i].tried) {
+          closed = { section: SECTIONS[i], wrapper: wrapper };
+        }
+      }
+      if (!closed) return finish();
+
+      var button = closed.wrapper.querySelector('input[type="button"].OpenClosePSButton')
+        || closed.wrapper.querySelector('.OpenClosePSButton');
+      closed.section.tried = true;
+      if (!button) {
+        log('No open button on the ' + closed.section.key + ' section.');
+        return next();
+      }
+      log('Opening the ' + closed.section.key + ' section.');
+      waited = 0;
+      button.click();
+      setTimeout(next, POLL_INTERVAL_MS);
+    })();
+  }
+
+  function apply() {
+    SECTIONS.forEach(function (section) { section.tried = false; });
+    openSections(function () {
+      whenReady(function () {
+        // Let targets-checkboxes.js render its list first so we can filter it.
+        setTimeout(function () {
+          if (!isEnabled()) return;
+          try {
+            applyNow();
+          } catch (e) {
+            log('GOTV mode failed:', e);
+            clear();
+          }
+        }, 0);
+      });
+    });
+  }
+
   // The tree is resolved here rather than passed in: a postback rebuilds the
   // Fancytree, so any instance captured earlier is detached and driving it
   // would silently do nothing.
-  function apply() {
+  function applyNow() {
     var tree = getTree();
     if (!tree) {
       log('Targets tree not available; GOTV mode not applied.');
@@ -687,39 +809,39 @@
       return;
     }
 
-    // Let targets-checkboxes.js render first so we can filter its list.
-    setTimeout(function () {
-      try {
-        mountToggle();
-        if (isEnabled()) apply();
-      } catch (e) {
-        log('GOTV mode failed:', e);
-        clear();
-      }
-    }, 0);
+    // The toggle does not wait for the Targets tree: when Targets is not a
+    // favorite the tree is not in the page until the section is opened, and
+    // turning the mode on is what opens it.
+    try {
+      mountToggle();
+    } catch (e) {
+      log('Could not mount the GOTV toggle:', e);
+      return;
+    }
+    if (isEnabled()) apply();
   }
 
   // Choosing a county fires an ASP.NET partial postback, which re-renders the
   // districts panel and restores every row we hid. The content script does not
   // re-run for a partial postback, so re-apply on the PageRequestManager's
-  // endRequest — the event that fires after each one.
+  // endRequest — the event that fires after each one. Postbacks the mode
+  // causes itself while opening sections are skipped; apply() finishes once
+  // they are done.
   function hookPartialPostbacks() {
-    var sys = window.Sys;
-    if (!sys || !sys.WebForms || !sys.WebForms.PageRequestManager) {
+    var prm = pageRequestManager();
+    if (!prm) {
       log('No PageRequestManager; GOTV mode will not survive partial postbacks.');
       return;
     }
     try {
-      sys.WebForms.PageRequestManager.getInstance().add_endRequest(function () {
-        whenReady(start);
+      prm.add_endRequest(function () {
+        if (!opening) start();
       });
     } catch (e) {
       log('Could not hook partial postbacks:', e);
     }
   }
 
-  whenReady(function () {
-    start();
-    hookPartialPostbacks();
-  });
+  start();
+  hookPartialPostbacks();
 })();

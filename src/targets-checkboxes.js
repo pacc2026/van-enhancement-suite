@@ -230,6 +230,10 @@
   // the Fancytree without re-running this script, which throws away the
   // checkbox list. Re-enhance once each one finishes; whenReady re-resolves the
   // tree, so we never hold on to the detached instance.
+  //
+  // Opening a collapsed Targets section is a partial postback too, and when
+  // Targets is not a favorite that is the first time the tree exists — so the
+  // hook goes on at load, not after the tree is first found.
   function hookPartialPostbacks() {
     var sys = window.Sys;
     if (!sys || !sys.WebForms || !sys.WebForms.PageRequestManager) return;
@@ -242,8 +246,6 @@
     }
   }
 
-  whenReady(function (tree) {
-    run(tree);
-    hookPartialPostbacks();
-  });
+  whenReady(run);
+  hookPartialPostbacks();
 })();
