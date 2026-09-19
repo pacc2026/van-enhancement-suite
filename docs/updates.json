@@ -3,9 +3,9 @@
     "van-enhancement-suite@pacc2026.github.io": {
       "updates": [
         {
-          "version": "0.3.5",
-          "update_link": "https://github.com/pacc2026/van-enhancement-suite/releases/download/v0.3.5/van-enhancement-suite-0.3.5.xpi",
-          "update_hash": "sha256:39c86fbbfd1bea1e2496642cf38a05925170d24a205a99f662565712fb4dff78"
+          "version": "0.3.6",
+          "update_link": "https://github.com/pacc2026/van-enhancement-suite/releases/download/v0.3.6/van-enhancement-suite-0.3.6.xpi",
+          "update_hash": "sha256:27facaea59b975dcad04b9690346cf1db3226b5066f3021ca8a7bcf4562ff9b6"
         }
       ]
     }
