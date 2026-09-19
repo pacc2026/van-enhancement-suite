@@ -43,7 +43,8 @@
       ],
       "js": [
         "src/precinct-map.js",
-        "src/save-region.js"
+        "src/save-region.js",
+        "src/redirect-after-save.js"
       ],
       "world": "MAIN",
       "run_at": "document_idle"
