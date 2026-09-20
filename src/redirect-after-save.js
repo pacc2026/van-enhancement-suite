@@ -4,8 +4,8 @@
 // laps starts on CreateAList.aspx. VAN instead ends the save on TurfList.aspx,
 // which takes several seconds to load and is never the page they wanted.
 //
-// Saving POSTs to TurfCutterService.asmx/CreateAndSaveTurfs; on success VAN
-// navigates to TurfList.aspx from its own handler. That navigation is not
+// Saving POSTs to TurfCutterService.asmx; on success VAN navigates to
+// TurfList.aspx from its own handler. That navigation is not
 // blocked here. window.location cannot be overridden, and the destination is a
 // minified constant in a cache-busted bundle, so patching either is coupled to
 // markup that changes on every VAN deploy. The endpoint below is a server
@@ -20,6 +20,20 @@
 // Winning that race means going *last*, which is why the listener is attached
 // inside the wrapped send(). By then VAN has already attached its own handler
 // to the request, so ours runs after it and navigates second.
+//
+// Only "Save & Finish" ends the lap. Plain "Save" is a checkpoint -- the user
+// means to keep working on this map -- and takes the very same route to the
+// server, so the response cannot tell the two apart. The button that was
+// clicked can, so it is recorded at click time and read back when the save
+// lands.
+//
+// Which route that is depends on whether the turf already has a name. The
+// first save has none, so VAN opens the Save My Map Region modal and posts
+// CreateAndSaveTurfs. Once named, both buttons skip the modal and post
+// SaveTurfs instead. Observed on this page: "Save & Finish" on a named turf
+// posts SaveTurfs 2ms after the click, and VAN's unload begins in the same
+// millisecond the response lands -- the same race, just a different route, so
+// both are watched.
 
 (function () {
   'use strict';
@@ -27,8 +41,22 @@
   // Written by gotv-mode.js on CreateAList.aspx. Keep in step with it.
   var MODE_KEY = 'ves:gotv-turf-cutting';
 
-  var SAVE_ENDPOINT = '/Services/JS/TurfCutterService.asmx/CreateAndSaveTurfs';
+  // CreateAndSaveTurfs names a new turf, SaveTurfs re-saves a named one. Both
+  // answer with the same {"d":"EID..."} envelope.
+  var SAVE_ENDPOINT = /\/Services\/JS\/TurfCutterService\.asmx\/(?:CreateAnd)?SaveTurfs(?:[?#]|$)/;
   var RETURN_TO = '/CreateAList.aspx';
+
+  // The modal's name input, also used by save-region.js. Its presence is how we
+  // tell a click on an opener from a click inside the modal it opened.
+  var MODAL_INPUT_ID = 'save-region-name';
+
+  // Matched against the visible label, which is the steadiest thing on this
+  // page: the classes are minified and change on every VAN deploy, the words
+  // the user reads do not. "&" and "and" are both accepted.
+  var FINISH_LABEL = /save\s*(?:&|and)\s*finish/i;
+  var SAVE_LABEL = /save/i;
+
+  var CLICKABLE = 'button, a, input[type="button"], input[type="submit"], [role="button"]';
 
   function log() {
     var args = ['[van-enhancement-suite:redirect-after-save]'].concat([].slice.call(arguments));
@@ -45,9 +73,44 @@
     }
   }
 
+  // Set by the click on "Save & Finish", cleared by the click on "Save", and
+  // consumed by the save that follows. Defaults to false so a save nobody was
+  // seen to ask for leaves the user where they are.
+  var finishing = false;
+
+  function modalOpen() {
+    return !!document.getElementById(MODAL_INPUT_ID);
+  }
+
+  function labelOf(el) {
+    var text = el.textContent || el.value || el.getAttribute('aria-label') || '';
+    return String(text).replace(/\s+/g, ' ').trim();
+  }
+
+  // Runs in the capture phase so the intent is recorded even if VAN's own
+  // handler stops the event.
+  function watchOpeners() {
+    document.addEventListener('click', function (event) {
+      // Clicks inside the open modal are its own Save/Cancel; the button that
+      // opened it has already said which lap this is.
+      if (modalOpen()) return;
+
+      var target = event.target;
+      var el = target && target.closest && target.closest(CLICKABLE);
+      if (!el) return;
+
+      var label = labelOf(el);
+      if (!SAVE_LABEL.test(label)) return;
+
+      finishing = FINISH_LABEL.test(label);
+      log('Saving via "' + label + '"; ' +
+        (finishing ? 'will return to ' + RETURN_TO + ' after the save.' : 'staying on this map after the save.'));
+    }, true);
+  }
+
   function isSaveRequest(method, url) {
     return String(method || '').toUpperCase() === 'POST' &&
-      String(url || '').indexOf(SAVE_ENDPOINT) !== -1;
+      SAVE_ENDPOINT.test(String(url || ''));
   }
 
   // A 200 alone is not success: the service answers errors with 200 as well.
@@ -89,8 +152,16 @@
       if (this.__vesSave) {
         var xhr = this;
         xhr.addEventListener('loadend', function () {
+          // Consumed either way: an intent belongs to one save only.
+          var wasFinishing = finishing;
+          finishing = false;
+
           if (!gotvModeOn()) {
             log('GOTV mode is off; leaving VAN to land on TurfList.aspx.');
+            return;
+          }
+          if (!wasFinishing) {
+            log('Saved from "Save", not "Save & Finish"; staying on this map.');
             return;
           }
           if (!savedOk(xhr)) {
@@ -107,4 +178,7 @@
   }
 
   install();
+
+  if (document.body) watchOpeners();
+  else document.addEventListener('DOMContentLoaded', watchOpeners);
 })();
